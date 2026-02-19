@@ -4,6 +4,6 @@ app = FastAPI()
 async def root():
     return {"message": "we can start now"}
 
-@app.get("/register")
+@app.put("/register")
 async def register(username: str, email:str, password: str):
     return {"username": username, "email": email, "password": password}
