@@ -29,9 +29,8 @@ async def login_user(username: str, password: str):
     for u in users:
         if u["username"] == username and u["password"] == password:
             return {"message": "Login successful"}
-        else:
-            raise HTTPException(status_code=404, detail="Incorrect username or password")
-    return None
+    raise HTTPException(status_code=404, detail="Incorrect username or password")
+
 
 @app.put("/update/{user_id}")
 async def update_user(user_id: int, user: UserAuthModel):
