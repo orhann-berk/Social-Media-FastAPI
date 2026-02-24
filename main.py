@@ -47,7 +47,7 @@ async def update_user(user_id: int, user: UserAuthModel):
 async def get_user_posts(user_id: int):
     for u in users:
         if u["user_index"] == user_id:
-            if u["is_logged_in"]:
+            if u["is_logged_in"] == True:
                 return {"message": "Wall posts successfully fetched", "posts": user_posts}
             else:
                 return {"message": "Please login to see posts"}
@@ -62,6 +62,7 @@ async def create_user_post(user_id: int, post_id:int, post: PostModel):
         post.post_id = post_id
         new_post = {"post_id": post_id, "title": post.title ,"image": post.image, "description": post.description}
         user_posts.append(new_post)
+    return {"user_id": user_id, "post_id": post_id, "post": post}
 
 # user can update posts
 @app.put("/update/{user_id}/posts/{post_id}")
