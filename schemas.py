@@ -1,16 +1,16 @@
 from pydantic import BaseModel, Field
 
 class UserAuthModel(BaseModel):
-    username: str
+    name: str
     password: str
     email: str
+    is_logged_in: bool = Field(default=False)
 
 class PostModel(BaseModel):
-    post_id: int
     title: str
-    image: str
+    image_url: str
     body: str
 
 class UserBaseModel(BaseModel):
-    username: str
+    name: str
     email: str

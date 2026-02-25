@@ -1,8 +1,8 @@
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, Session
-from models import Base
+from sqlalchemy.orm import sessionmaker
+from db.models import Base
 
-SQLALCHEMY_DATABASE_URL = "sqlite:///./social.db"
+SQLALCHEMY_DATABASE_URL = "sqlite:///../social.db"
 
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
