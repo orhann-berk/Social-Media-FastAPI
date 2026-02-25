@@ -11,9 +11,10 @@ class DbUser(Base):
     email = Column(String, unique=True)
     password = Column(String)
 
-class DbPost(Base):
-    __tablename__ = "allposts"
-    id = Column(Integer, primary_key=True)
-    title = Column(String)
-    body = Column(String)
-    image_url = Column(String)
+# class DbPost(Base):
+#     __tablename__ = "allposts"
+#     post_id = Column(Integer, primary_key=True)
+#     poster_id = Column(Integer, foreign_key="allusers.id")
+#     title = Column(String)
+#     body = Column(String)
+#     image_url = Column(String)

@@ -8,7 +8,7 @@ class UserAuthModel(BaseModel):
 class PostModel(BaseModel):
     post_id: int
     title: str
-    image: str
+    image_url: str
     body: str
 
 class UserBaseModel(BaseModel):
