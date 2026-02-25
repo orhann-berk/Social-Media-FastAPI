@@ -48,9 +48,9 @@ def login_user(db: Session, name: str, password: str):
     if matching_user:
         matching_user.is_logged_in = True
         db.commit()
-        return matching_user
+        return HTTPException(status_code=status.HTTP_200_OK, detail="Login successful")
     else:
-        return "Wrong username or password"
+        return HTTPException(status_code=status.HTTP_200_OK, detail="Login successful")
 
 
 def add_post(db: Session, title: str, body: str, image_url: str):
