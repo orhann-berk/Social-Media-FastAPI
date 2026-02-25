@@ -5,8 +5,8 @@ def read_users(db: Session):
     retval = db.query(DbUser).all()
     return retval
 
-def add_user(db: Session, name:str, email:str):
-    user = DbUser(name = name, email = email)
+def post_user(db: Session, name:str, email:str, password:str):
+    user = DbUser(name = name, email = email, password = password)
     db.add(user)
     db.commit()
     db.refresh(user)
@@ -24,3 +24,11 @@ def add_post(db: Session, title: str, body: str, image_url: str):
     db.commit()
     db.refresh(post)
     return post
+
+def update_user(db: Session, user_id: int, name: str, email: str, password: str):
+    db_user = db.query(DbUser).filter(DbUser.id == user_id).first()
+    db_user.name = name
+    db_user.email = email
+    db_user.password = password
+    db.commit()
+    return
