@@ -58,3 +58,8 @@ if __name__ == "__main__":
         reload=True,
         log_level="debug",
     )
+
+#Log-out
+# @app.("/logout")
+# def logout_user(name: str, password: str, db: Session = Depends(get_db)):
+
