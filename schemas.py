@@ -4,9 +4,9 @@ class UserAuthModel(BaseModel):
     name: str
     password: str
     email: str
+    is_logged_in: bool = Field(default=False)
 
 class PostModel(BaseModel):
-    post_id: int
     title: str
     image_url: str
     body: str

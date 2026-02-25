@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from models import DbUser
+from db.models import DbUser, DbPost
 
 
 def read_users(db: Session):
@@ -12,8 +12,8 @@ def get_user(db: Session, user_id: int):
     return retval
 
 
-def post_user(db: Session, name:str, email:str, password:str):
-    user = DbUser(name = name, email = email, password = password)
+def add_user(db: Session, name:str, email:str, password:str, is_logged_in: bool):
+    user = DbUser(name = name, email = email, password = password, is_logged_in = is_logged_in)
     db.add(user)
     db.commit()
     db.refresh(user)
@@ -27,13 +27,6 @@ def delete_user(db: Session, user_id: int):
     return
 
 
-# def add_post(db: Session, title: str, body: str, image_url: str):
-#     post = DbPost(title= title, body= body, image_url = image_url)
-#     db.add(post)
-#     db.commit()
-#     db.refresh(post)
-#     return post
-
 def update_user(db: Session, user_id: int, name: str, email: str, password: str):
     db_user = db.query(DbUser).filter(DbUser.id == user_id).first()
     db_user.name = name
@@ -41,3 +34,25 @@ def update_user(db: Session, user_id: int, name: str, email: str, password: str)
     db_user.password = password
     db.commit()
     return
+
+
+def login_user(db: Session, name: str, password: str):
+    matching_user = db.query(DbUser).filter(DbUser.name == name and DbUser.password == password).first()
+    if matching_user:
+        matching_user.is_logged_in = True
+        return matching_user
+    else:
+        return "Wrong username or password"
+
+
+def add_post(db: Session, title: str, body: str, image_url: str):
+    post = DbPost(title = title, body = body, image_url = image_url)
+    db.add(post)
+    db.commit()
+    db.refresh(post)
+    return post
+
+
+def read_posts(db:Session, ):
+    retval = db.query(DbPost).all()
+    return retval
