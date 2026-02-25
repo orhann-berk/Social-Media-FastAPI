@@ -1,4 +1,6 @@
+from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
+
 from db.models import DbUser, DbPost
 
 
@@ -22,24 +24,30 @@ def add_user(db: Session, name:str, email:str, password:str, is_logged_in: bool)
 
 def delete_user(db: Session, user_id: int):
     user = db.query(DbUser).filter(DbUser.id == user_id).first()
-    db.delete(user)
-    db.commit()
-    return
-
+    if user.is_logged_in:
+        db.delete(user)
+        db.commit()
+        return None
+    else:
+        return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
 
 def update_user(db: Session, user_id: int, name: str, email: str, password: str):
     db_user = db.query(DbUser).filter(DbUser.id == user_id).first()
-    db_user.name = name
-    db_user.email = email
-    db_user.password = password
-    db.commit()
-    return
+    if db_user.is_logged_in:
+        db_user.name = name
+        db_user.email = email
+        db_user.password = password
+        db.commit()
+        return None
+    else:
+        return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
 
 
 def login_user(db: Session, name: str, password: str):
     matching_user = db.query(DbUser).filter(DbUser.name == name and DbUser.password == password).first()
     if matching_user:
         matching_user.is_logged_in = True
+        db.commit()
         return matching_user
     else:
         return "Wrong username or password"
