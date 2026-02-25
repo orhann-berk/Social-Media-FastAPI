@@ -1,5 +1,6 @@
 from sqlalchemy import Column, Integer, String, Boolean
 from sqlalchemy.orm import declarative_base
+from sqlalchemy import ForeignKey
 
 Base = declarative_base()
 
@@ -19,3 +20,4 @@ class DbPost(Base):
     title = Column(String)
     body = Column(String)
     image_url = Column(String)
+    user_id = Column(Integer, ForeignKey("allusers.id"))  # NEW

@@ -1,6 +1,6 @@
 import uvicorn
 from fastapi import FastAPI, Depends, status
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, relationship
 from schemas import UserAuthModel, PostModel
 import crud
 from db.database import get_db
@@ -38,7 +38,7 @@ def add_post(post: PostModel, db: Session = Depends(get_db)):
     return crud.add_post(db, title = post.title, body = post.body, image_url= post.image_url)
 
 
-@app.get("/posts")
+@app.get("/posts", )
 def get_posts(db: Session = Depends(get_db)):
     result = crud.read_posts(db)
     return result

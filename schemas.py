@@ -7,9 +7,12 @@ class UserAuthModel(BaseModel):
     is_logged_in: bool = Field(default=False)
 
 class PostModel(BaseModel):
+    id: int
     title: str
     image_url: str
     body: str
+    class Config:
+        from_attributes = True
 
 class UserBaseModel(BaseModel):
     name: str

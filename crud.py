@@ -40,6 +40,7 @@ def login_user(db: Session, name: str, password: str):
     matching_user = db.query(DbUser).filter(DbUser.name == name and DbUser.password == password).first()
     if matching_user:
         matching_user.is_logged_in = True
+        db.commit()
         return matching_user
     else:
         return "Wrong username or password"
@@ -48,11 +49,18 @@ def login_user(db: Session, name: str, password: str):
 def add_post(db: Session, title: str, body: str, image_url: str):
     post = DbPost(title = title, body = body, image_url = image_url)
     db.add(post)
-    db.commit()
-    db.refresh(post)
-    return post
+    try:
+        db.commit()
+        db.refresh(post)
+        return post
+    except: db.rollback() #if DB fails then rollback keeps session usable
+    raise
 
 
-def read_posts(db:Session, ):
-    retval = db.query(DbPost).all()
-    return retval
+def read_posts(db:Session, user_id: int | None = None): #reads all posts + reads posts from user id
+    query = db.query(DbPost)
+
+    if user_id is not None:
+        query = query.filter(DbPost.user_id == user_id)
+
+    return query.all()
