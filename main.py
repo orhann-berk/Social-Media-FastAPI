@@ -3,12 +3,13 @@ from fastapi import FastAPI, Depends, status
 from sqlalchemy.orm import Session
 from schemas import UserAuthModel, UserBaseModel
 import crud
+from typing import List
 from database import get_db
 
 app = FastAPI()
 
 # python list for use of db
-@app.get("/users") # , response_model = list[UserBaseModel]
+@app.get("/users", response_model = List[UserBaseModel]) #
 def get_users(db: Session = Depends(get_db)):
     result = crud.read_users(db)
     return result
@@ -28,6 +29,6 @@ if __name__ == "__main__":
         "main:app",
         host="127.0.0.1",
         port=8000,
-        reload=False,
+        reload=True,
         log_level="debug",
     )

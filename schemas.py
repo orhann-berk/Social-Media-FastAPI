@@ -12,5 +12,5 @@ class PostModel(BaseModel):
     body: str
 
 class UserBaseModel(BaseModel):
-    username: str
+    name: str
     email: str
