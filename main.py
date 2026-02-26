@@ -49,6 +49,11 @@ def get_posts(db: Session = Depends(get_db)):
 def login_user(name: str, password: str, db: Session = Depends(get_db)):
     return crud.login_user(db, name = name, password = password)
 
+#Log-out#
+@app.get("/logout")
+def logout_user(name: str, password: str, db: Session = Depends(get_db)):
+    return crud.logout_user(db, name = name, password = password)
+
 if __name__ == "__main__":
     # Important: disable reload while debugging
     uvicorn.run(
@@ -58,8 +63,4 @@ if __name__ == "__main__":
         reload=True,
         log_level="debug",
     )
-
-#Log-out
-# @app.("/logout")
-# def logout_user(name: str, password: str, db: Session = Depends(get_db)):
 
