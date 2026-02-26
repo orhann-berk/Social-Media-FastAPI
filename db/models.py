@@ -15,7 +15,6 @@ class DbUser(Base):
 class DbPost(Base):
     __tablename__ = "allposts"
     id = Column(Integer, primary_key=True, index=True)
-#   poster_id = Column(Integer, ForeignKey('users.id'))
     title = Column(String)
     body = Column(String)
     image_url = Column(String)
