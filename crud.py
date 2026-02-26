@@ -26,7 +26,7 @@ def delete_user(db: Session, user_id: int):
     if user.is_logged_in:
         db.delete(user)
         db.commit()
-        return None
+        return HTTPException(status_code=status.HTTP_200_OK)
     else:
         return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
 
@@ -38,7 +38,7 @@ def update_user(db: Session, user_id: int, name: str, email: str, password: str)
         db_user.email = email
         db_user.password = password
         db.commit()
-        return None
+        return HTTPException(status_code=status.HTTP_200_OK)
     else:
         return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
 
