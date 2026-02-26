@@ -71,6 +71,6 @@ def logout_user(db: Session, name: str, password: str):
     if user_out:
         user_out.is_logged_in= False
         db.commit()
-        return HTTPException(status_code=status.HTTP_200_OK)
+        return None
     else:
         return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
