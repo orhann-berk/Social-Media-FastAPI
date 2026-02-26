@@ -64,3 +64,12 @@ def add_post(db: Session, title: str, body: str, image_url: str):
 def read_posts(db:Session, ):
     retval = db.query(DbPost).all()
     return retval
+
+def logout_user(db: Session, name: str, password: str):
+    user_out = db.query(DbUser).filter(DbUser.name == name and DbUser.password == password and DbUser.is_logged_in == bool[True]).first()
+    if user_out:
+        user_out.is_logged_in= False
+        db.commit()
+        return HTTPException(status_code=status.HTTP_200_OK)
+    else:
+        return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
