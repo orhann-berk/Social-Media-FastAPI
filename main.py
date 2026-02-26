@@ -1,7 +1,7 @@
 import uvicorn
 from fastapi import FastAPI, Depends, status
-from sqlalchemy.orm import Session, relationship
-from schemas import UserAuthModel, PostModel
+from sqlalchemy.orm import Session
+from schemas import UserAuthModel, PostCreate, PostOut
 import crud
 from db.database import get_db
 
@@ -33,16 +33,9 @@ def update_user(user: UserAuthModel, user_id:int, db: Session = Depends(get_db))
     return crud.update_user(db, user_id= user_id, name = user.name, email = user.email, password=user.password)
 
 
-@app.post("/add/post", status_code=status.HTTP_202_ACCEPTED)
-def add_post(post: PostModel, db: Session = Depends(get_db)):
-    return crud.add_post(db, title = post.title, body = post.body, image_url= post.image_url)
-
-
-@app.get("/posts", )
-def get_posts(db: Session = Depends(get_db)):
-    result = crud.read_posts(db)
-    return result
-
+@app.post("/add/post", response_model=PostOut, status_code=status.HTTP_202_ACCEPTED)
+def add_post(post: PostCreate, db: Session = Depends(get_db)):
+    return crud.add_post(db, title = post.title, body = post.body, image_url= post.image_url, user_id=post.user_id)
 
 # Login
 @app.get("/login")

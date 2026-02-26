@@ -37,7 +37,7 @@ def update_user(db: Session, user_id: int, name: str, email: str, password: str)
 
 
 def login_user(db: Session, name: str, password: str):
-    matching_user = db.query(DbUser).filter(DbUser.name == name and DbUser.password == password).first()
+    matching_user = db.query(DbUser).filter(DbUser.name == name, DbUser.password == password).first()
     if matching_user:
         matching_user.is_logged_in = True
         db.commit()
@@ -46,21 +46,17 @@ def login_user(db: Session, name: str, password: str):
         return "Wrong username or password"
 
 
-def add_post(db: Session, title: str, body: str, image_url: str):
-    post = DbPost(title = title, body = body, image_url = image_url)
+def add_post(db: Session, title: str, body: str, image_url: str, user_id: int):
+    post = DbPost(title = title, body = body, image_url = image_url, user_id=user_id) #to link post to the user
     db.add(post)
-    try:
-        db.commit()
-        db.refresh(post)
-        return post
-    except: db.rollback() #if DB fails then rollback keeps session usable
-    raise
+    db.commit()
+    db.refresh(post)
+    return post
 
+def read_posts(db:Session): #reads all posts
+    query = db.query(DbPost).all()
+    return query
 
-def read_posts(db:Session, user_id: int | None = None): #reads all posts + reads posts from user id
-    query = db.query(DbPost)
-
-    if user_id is not None:
-        query = query.filter(DbPost.user_id == user_id)
-
-    return query.all()
+#Find the post whose id equals post_id, and give me the first result, Stops querying after the first match
+def read_post(db: Session, post_id: int):
+    return db.query(DbPost).filter(DbPost.id == post_id).first()

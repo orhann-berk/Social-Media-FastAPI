@@ -5,15 +5,18 @@ class UserAuthModel(BaseModel):
     password: str
     email: str
     is_logged_in: bool = Field(default=False)
-
-class PostModel(BaseModel):
-    id: int
-    title: str
-    image_url: str
-    body: str
-    class Config:
-        from_attributes = True
-
 class UserBaseModel(BaseModel):
     name: str
     email: str
+
+class PostCreate(BaseModel): #create post
+    title: str
+    image_url: str
+    body: str
+    user_id: int
+
+class PostOut(PostCreate): #returns post
+    id: int
+    class Config:
+        from_attributes = True
+

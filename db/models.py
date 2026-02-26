@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, String, Boolean
-from sqlalchemy.orm import declarative_base
+from sqlalchemy.orm import declarative_base, relationship
 from sqlalchemy import ForeignKey
 
 Base = declarative_base()
@@ -13,6 +13,8 @@ class DbUser(Base):
     password = Column(String)
     is_logged_in = Column(Boolean)
 
+    posts = relationship("DbPost", back_populates="user")
+
 class DbPost(Base):
     __tablename__ = "allposts"
     id = Column(Integer, primary_key=True, index=True)
@@ -20,4 +22,7 @@ class DbPost(Base):
     title = Column(String)
     body = Column(String)
     image_url = Column(String)
-    user_id = Column(Integer, ForeignKey("allusers.id"))  # NEW
+    user_id = Column(Integer, ForeignKey("allusers.id"))
+
+    user = relationship("DbUser", back_populates="posts")
+   #ORM RELATIONSHIP
