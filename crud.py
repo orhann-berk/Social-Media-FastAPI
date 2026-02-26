@@ -1,6 +1,5 @@
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
-
 from db.models import DbUser, DbPost
 
 
@@ -31,6 +30,7 @@ def delete_user(db: Session, user_id: int):
     else:
         return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
 
+
 def update_user(db: Session, user_id: int, name: str, email: str, password: str):
     db_user = db.query(DbUser).filter(DbUser.id == user_id).first()
     if db_user.is_logged_in:
@@ -50,7 +50,7 @@ def login_user(db: Session, name: str, password: str):
         db.commit()
         return HTTPException(status_code=status.HTTP_200_OK, detail="Login successful")
     else:
-        return HTTPException(status_code=status.HTTP_200_OK, detail="Login successful")
+        return HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Login unsuccessful")
 
 
 def add_post(db: Session, title: str, body: str, image_url: str):
@@ -64,6 +64,7 @@ def add_post(db: Session, title: str, body: str, image_url: str):
 def read_posts(db:Session, ):
     retval = db.query(DbPost).all()
     return retval
+
 
 def logout_user(db: Session, name: str, password: str):
     user_out = db.query(DbUser).filter(DbUser.name == name and DbUser.password == password and DbUser.is_logged_in == bool[True]).first()
