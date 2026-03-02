@@ -9,13 +9,13 @@ from db.database import get_db
 app = FastAPI()
 
 
-@app.get("/user/all", response_model = List[UserBaseModel], tags=["user"]) #
+@app.get("/user/all", status_code=status.HTTP_200_OK, response_model = List[UserBaseModel], tags=["user"]) #
 def get_users(db: Session = Depends(get_db)):
     result = crud.read_users(db)
     return result
 
 
-@app.get("/user/{user_id}", tags=["user"])
+@app.get("/user/{user_id}", status_code=status.HTTP_200_OK, tags=["user"])
 def get_user(user_id: int, db: Session = Depends(get_db)):
     return crud.get_user(db, user_id = user_id)
 
@@ -30,12 +30,12 @@ def login_user(name: str, password: str, db: Session = Depends(get_db)):
     return crud.login_user(db, name = name, password = password)
 
 
-@app.get("/logout", tags=["user"])
+@app.get("/logout", tags=["user"], status_code=status.HTTP_200_OK)
 def logout_user(name: str, password: str, db: Session = Depends(get_db)):
     return crud.logout_user(db, name = name, password = password)
 
 
-@app.delete("/user/{user_id}/delete", status_code=status.HTTP_204_NO_CONTENT, tags=["user"])
+@app.delete("/user/{user_id}/delete", status_code=status.HTTP_202_ACCEPTED, tags=["user"])
 def delete_user(user_id: int, db: Session = Depends(get_db)):
     return crud.delete_user(db, user_id = user_id)
 
