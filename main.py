@@ -22,7 +22,7 @@ def get_user(user_id: int, db: Session = Depends(get_db)):
 
 @app.post("/register", status_code=status.HTTP_201_CREATED, tags=["user"])
 def add_user(user: UserAuthModel, db: Session = Depends(get_db)):
-    return crud.add_user(db, name=user.name, email=user.email, password = user.password, is_logged_in = user.is_logged_in)
+    return crud.add_user(db, name=user.name, email=user.email, password = user.password)
 
 
 @app.get("/login", status_code=status.HTTP_200_OK, tags=["user"])

@@ -13,11 +13,11 @@ def get_user(db: Session, user_id: int):
     retval = db.query(DbUser).filter(DbUser.id == user_id).first()
     if retval:
         return retval
-    return  "No user found"
+    return  "User not found"
 
 
-def add_user(db: Session, name:str, email:str, password:str, is_logged_in: bool):
-    user = DbUser(name = name, email = email, password = password, is_logged_in = is_logged_in)
+def add_user(db: Session, name:str, email:str, password:str):
+    user = DbUser(name = name, email = email, password = password, is_logged_in = False)
     db.add(user)
     db.commit()
     db.refresh(user)
