@@ -33,7 +33,7 @@ def delete_user(db: Session, user_id: int):
         db.commit()
         return "User deleted"
     else:
-        return "User not logged in"
+        return "User must login"
 
 
 def update_user(db: Session, user_id: int, name: str, email: str, password: str):
@@ -47,7 +47,7 @@ def update_user(db: Session, user_id: int, name: str, email: str, password: str)
         db.commit()
         return "User updated successfully"
     else:
-        return "User not logged in"
+        return "User must login"
 
 
 def login_user(db: Session, name: str, password: str):

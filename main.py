@@ -2,7 +2,7 @@ import uvicorn
 from typing import List
 from fastapi import FastAPI, Depends, status
 from sqlalchemy.orm import Session
-from schemas import UserAuthModel, PostModel, UserBaseModel
+from schemas import UserAuthModel, PostModel, UserBaseModel, UserUpdateModel
 import crud
 from db.database import get_db
 
@@ -41,7 +41,7 @@ def delete_user(user_id: int, db: Session = Depends(get_db)):
 
 
 @app.put("/users/{user_id}/update", status_code=status.HTTP_202_ACCEPTED, tags=["user"])
-def update_user(user: UserAuthModel, user_id:int, db: Session = Depends(get_db)):
+def update_user(user: UserUpdateModel, user_id:int, db: Session = Depends(get_db)):
     return crud.update_user(db, user_id= user_id, name = user.name, email = user.email, password=user.password)
 
 
