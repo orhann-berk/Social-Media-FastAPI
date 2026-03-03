@@ -1,6 +1,6 @@
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
-from db.models import DbUser, DbPost
+from db.models import DbUser, DbPost, DbFriendRequest, RequestStatus
 
 
 def read_users(db: Session):
@@ -74,3 +74,34 @@ def logout_user(db: Session, name: str, password: str):
         return HTTPException(status_code=status.HTTP_200_OK)
     else:
         return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+
+def create_friend_request(db: Session, sender_id: int, receiver_id: int):
+    if sender_id == receiver_id:
+        raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE,
+                            detail="You can not send a friend request to yourself.")
+
+    receiver = db.query(DbUser).filter(DbUser.id == receiver_id).first()
+    if not receiver:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail="Receiver does not exist.")
+
+    existing_request = db.query(DbFriendRequest).filter(DbFriendRequest.sender_id == sender_id,
+                                                        DbFriendRequest.receiver_id == receiver_id).first()
+
+    if existing_request:
+        raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE, detail="You have already sent a friend.")
+
+    new_request = DbFriendRequest(sender_id = sender_id, receiver_id = receiver_id,
+                                  status=RequestStatus.pending)
+
+    db.add(new_request)
+    db.commit()
+    db.refresh(new_request)
+
+    return new_request
+
+def get_pending_requests(db: Session, user_id: int):
+    requests = db.query(DbFriendRequest).filter(DbFriendRequest.receiver_id == user_id,
+                                                DbFriendRequest.status == RequestStatus.pending).all()
+
+    return requests

@@ -2,7 +2,7 @@ import uvicorn
 from typing import List
 from fastapi import FastAPI, Depends, status
 from sqlalchemy.orm import Session
-from schemas import UserAuthModel, PostModel, UserBaseModel
+from schemas import UserAuthModel, PostModel, UserBaseModel, FriendRequestCreate, FriendRequestResponse
 import crud
 from db.database import get_db
 
@@ -54,6 +54,18 @@ def add_post(post: PostModel, db: Session = Depends(get_db)):
 def get_posts(db: Session = Depends(get_db)):
     result = crud.read_posts(db)
     return result
+
+@app.post("/friends/request", response_model=FriendRequestResponse, status_code=status.HTTP_201_CREATED, tags=["friend-request"])
+def send_friend_request(request: FriendRequestCreate, db: Session = Depends(get_db)):
+    return crud.create_friend_request(
+        db=db, sender_id=request.sender_id, receiver_id=request.receiver_id)
+
+@app.get("/friend/requests/pending/{user_id}", response_model=List[FriendRequestResponse], tags=["friend-request"])
+def get_pending_requests(user_id: int, db: Session = Depends(get_db)):
+    """
+    User may see friend requests.
+    """
+    return crud.get_pending_requests(db=db, user_id = user_id)
 
 
 if __name__ == "__main__":

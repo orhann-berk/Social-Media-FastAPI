@@ -1,5 +1,6 @@
-from sqlalchemy import Column, Integer, String, Boolean
-from sqlalchemy.orm import declarative_base
+from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, Enum as SQLEnum
+from sqlalchemy.orm import declarative_base, relationship
+import enum
 
 Base = declarative_base()
 
@@ -18,3 +19,19 @@ class DbPost(Base):
     title = Column(String)
     body = Column(String)
     image_url = Column(String)
+
+class RequestStatus(str, enum.Enum):
+    pending = "pending"
+    accepted = "accepted"
+    rejected = "rejected"
+
+class DbFriendRequest(Base):
+    __tablename__ = "friend_requests"
+    id = Column(Integer, primary_key=True, index=True)
+    sender_id = Column(Integer, ForeignKey("allusers.id"))
+    receiver_id = Column(Integer, ForeignKey("allusers.id"))
+    status = Column(SQLEnum(RequestStatus))
+    default = RequestStatus.pending
+
+    sender = relationship("DbUser", foreign_keys=[sender_id])
+    receiver = relationship("DbUser", foreign_keys=[receiver_id])
