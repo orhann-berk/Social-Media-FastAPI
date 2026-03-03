@@ -2,8 +2,7 @@ import uvicorn
 from typing import List
 from fastapi import FastAPI, Depends, status
 from sqlalchemy.orm import Session
-from schemas import UserAuthModel, PostModel, UserBaseModel, FriendRequestCreate, FriendRequestResponse
-from schemas import UserAuthModel, PostModel, UserBaseModel, UserUpdateModel
+from schemas import *
 import crud
 from db.database import get_db
 
