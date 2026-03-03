@@ -1,20 +1,23 @@
-from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 from db.models import DbUser, DbPost
 
 
 def read_users(db: Session):
     retval = db.query(DbUser).all()
-    return retval
+    if retval:
+        return retval
+    return "No users found"
 
 
 def get_user(db: Session, user_id: int):
     retval = db.query(DbUser).filter(DbUser.id == user_id).first()
-    return retval
+    if retval:
+        return retval
+    return  "User not found"
 
 
-def add_user(db: Session, name:str, email:str, password:str, is_logged_in: bool):
-    user = DbUser(name = name, email = email, password = password, is_logged_in = is_logged_in)
+def add_user(db: Session, name:str, email:str, password:str):
+    user = DbUser(name = name, email = email, password = password, is_logged_in = False)
     db.add(user)
     db.commit()
     db.refresh(user)
@@ -23,24 +26,28 @@ def add_user(db: Session, name:str, email:str, password:str, is_logged_in: bool)
 
 def delete_user(db: Session, user_id: int):
     user = db.query(DbUser).filter(DbUser.id == user_id).first()
-    if user.is_logged_in:
+    if not user:
+        return "User not found"
+    elif user.is_logged_in:
         db.delete(user)
         db.commit()
-        return HTTPException(status_code=status.HTTP_200_OK)
+        return "User deleted"
     else:
-        return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+        return "User must login"
 
 
 def update_user(db: Session, user_id: int, name: str, email: str, password: str):
     db_user = db.query(DbUser).filter(DbUser.id == user_id).first()
-    if db_user.is_logged_in:
+    if not db_user:
+        return "User not found"
+    elif db_user.is_logged_in:
         db_user.name = name
         db_user.email = email
         db_user.password = password
         db.commit()
-        return HTTPException(status_code=status.HTTP_200_OK)
+        return "User updated successfully"
     else:
-        return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+        return "User must login"
 
 
 def login_user(db: Session, name: str, password: str):
@@ -48,9 +55,9 @@ def login_user(db: Session, name: str, password: str):
     if matching_user:
         matching_user.is_logged_in = True
         db.commit()
-        return HTTPException(status_code=status.HTTP_200_OK, detail="Login successful")
+        return "Login successful"
     else:
-        return HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Login unsuccessful")
+        return "Login unsuccessful"
 
 
 def add_post(db: Session, title: str, body: str, image_url: str):
@@ -61,16 +68,20 @@ def add_post(db: Session, title: str, body: str, image_url: str):
     return post
 
 
-def read_posts(db:Session, ):
+def read_posts(db:Session):
     retval = db.query(DbPost).all()
     return retval
 
 
 def logout_user(db: Session, name: str, password: str):
-    user_out = db.query(DbUser).filter(DbUser.name == name and DbUser.password == password and DbUser.is_logged_in == bool[True]).first()
-    if user_out:
+    user_out = db.query(DbUser).filter(DbUser.name == name and DbUser.password == password).first()
+    if not user_out:
+        return "User cannot found"
+    elif user_out.is_logged_in:
         user_out.is_logged_in= False
         db.commit()
-        return HTTPException(status_code=status.HTTP_200_OK)
+        return "Logout successful"
+    elif not user_out.is_logged_in:
+        return "User must login"
     else:
-        return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+        return "Logout unsuccessful"
