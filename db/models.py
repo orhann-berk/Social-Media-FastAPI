@@ -11,7 +11,7 @@ class DbUser(Base):
     name = Column(String)
     email = Column(String, unique=True)
     password = Column(String)
-    is_logged_in = Column(Boolean)
+    is_logged_in = Column(Boolean, default=False)
 
 class DbPost(Base):
     __tablename__ = "allposts"
