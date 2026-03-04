@@ -1,20 +1,28 @@
-from fastapi import HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Depends
 from sqlalchemy.orm import Session
-from db.models import DbUser, DbPost
+from db.models import User, Post
+from typing import List
 
+from db.database import get_db
+from schemas import PostCreate, PostOut, CommentCreate, CommentOut
+from db import models
+from auth_utils import get_current_user
+
+
+router = APIRouter()
 
 def read_users(db: Session):
-    retval = db.query(DbUser).all()
+    retval = db.query(User).all()
     return retval
 
 
 def get_user(db: Session, user_id: int):
-    retval = db.query(DbUser).filter(DbUser.id == user_id).first()
+    retval = db.query(User).filter(User.id == user_id).first()
     return retval
 
 
 def add_user(db: Session, name:str, email:str, password:str, is_logged_in: bool):
-    user = DbUser(name = name, email = email, password = password, is_logged_in = is_logged_in)
+    user = User(name = name, email = email, password = password, is_logged_in = is_logged_in)
     db.add(user)
     db.commit()
     db.refresh(user)
@@ -22,7 +30,7 @@ def add_user(db: Session, name:str, email:str, password:str, is_logged_in: bool)
 
 
 def delete_user(db: Session, user_id: int):
-    user = db.query(DbUser).filter(DbUser.id == user_id).first()
+    user = db.query(User).filter(User.id == user_id).first()
     if user.is_logged_in:
         db.delete(user)
         db.commit()
@@ -32,7 +40,7 @@ def delete_user(db: Session, user_id: int):
 
 
 def update_user(db: Session, user_id: int, name: str, email: str, password: str):
-    db_user = db.query(DbUser).filter(DbUser.id == user_id).first()
+    db_user = db.query(User).filter(User.id == user_id).first()
     if db_user.is_logged_in:
         db_user.name = name
         db_user.email = email
@@ -44,7 +52,7 @@ def update_user(db: Session, user_id: int, name: str, email: str, password: str)
 
 
 def login_user(db: Session, name: str, password: str):
-    matching_user = db.query(DbUser).filter(DbUser.name == name and DbUser.password == password).first()
+    matching_user = db.query(User).filter(User.name == name and User.password == password).first()
     if matching_user:
         matching_user.is_logged_in = True
         db.commit()
@@ -54,7 +62,7 @@ def login_user(db: Session, name: str, password: str):
 
 
 def add_post(db: Session, title: str, body: str, image_url: str):
-    post = DbPost(title = title, body = body, image_url = image_url)
+    post = Post(title = title, body = body, image_url = image_url)
     db.add(post)
     db.commit()
     db.refresh(post)
@@ -62,15 +70,94 @@ def add_post(db: Session, title: str, body: str, image_url: str):
 
 
 def read_posts(db:Session, ):
-    retval = db.query(DbPost).all()
+    retval = db.query(Post).all()
     return retval
 
 
 def logout_user(db: Session, name: str, password: str):
-    user_out = db.query(DbUser).filter(DbUser.name == name and DbUser.password == password and DbUser.is_logged_in == bool[True]).first()
+    user_out = db.query(User).filter(User.name == name and User.password == password and User.is_logged_in == bool[True]).first()
     if user_out:
         user_out.is_logged_in= False
         db.commit()
         return HTTPException(status_code=status.HTTP_200_OK)
     else:
         return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+
+# ─── Create Post ────────────────────────────────────────────────────────────
+def create_post(
+    post_data: PostCreate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """Post an activity to the authenticated user's personal wall."""
+    post = models.Post(
+        content=post_data.content,
+        image_url=post_data.image_url,
+        author_id=current_user.id,
+    )
+    db.add(post)
+    db.commit()
+    db.refresh(post)
+    return post
+
+
+# ─── Own Wall ───────────────────────────────────────────────────────────────
+def get_my_wall(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """Get the authenticated user's own wall (all their posts)."""
+    return (
+        db.query(models.Post)
+        .filter(models.Post.author_id == current_user.id)
+        .order_by(models.Post.created_at.desc())
+        .all()
+    )
+
+
+def get_user_wall(user_id: int, db: Session = Depends(get_db)):
+    """Get a specific user's public wall."""
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return (
+        db.query(models.Post)
+        .filter(models.Post.author_id == user_id)
+        .order_by(models.Post.created_at.desc())
+        .all()
+    )
+# ─── Delete Post ─────────────────────────────────────────────────────────────
+def delete_post(
+    post_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    post = db.query(models.Post).filter(models.Post.id == post_id).first()
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+    if post.author_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    db.delete(post)
+    db.commit()
+
+
+# ─── Comments ─────────────────────────────────────────────────────────────────
+def add_comment(
+    post_id: int,
+    comment_data: CommentCreate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    post = db.query(models.Post).filter(models.Post.id == post_id).first()
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+
+    comment = models.Comment(
+        content=comment_data.content,
+        post_id=post_id,
+        author_id=current_user.id,
+    )
+    db.add(comment)
+    db.commit()
+    db.refresh(comment)
+    return comment
