@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
 from db.models import DbUser, DbPost
+from db.hash import Hash
 
 
 def read_users(db: Session):
@@ -14,7 +15,8 @@ def get_user(db: Session, user_id: int):
 
 
 def add_user(db: Session, name:str, email:str, password:str):
-    user = DbUser(name = name, email = email, password = password, is_logged_in = False)
+    user = DbUser(name = name, email = email,
+                  password = Hash.bcrypt(password), is_logged_in = False)
     db.add(user)
     db.commit()
     db.refresh(user)
