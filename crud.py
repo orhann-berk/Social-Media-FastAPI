@@ -49,7 +49,7 @@ def update_user(db: Session, user_id: int, name: str, email: str, password: str)
 
 
 def login_user(db: Session, name: str, password: str):
-    matching_user = db.query(DbUser).filter(DbUser.name == name and DbUser.password == password).first()
+    matching_user = db.query(DbUser).filter(DbUser.name == name, DbUser.password == password).first()
     if matching_user:
         matching_user.is_logged_in = True
         db.commit()
@@ -72,7 +72,7 @@ def read_posts(db:Session):
 
 
 def logout_user(db: Session, name: str, password: str):
-    user_out = db.query(DbUser).filter(DbUser.name == name and DbUser.password == password).first()
+    user_out = db.query(DbUser).filter(DbUser.name == name, DbUser.password == password).first()
     if not user_out:
         return "User cannot found"
     elif user_out.is_logged_in:
