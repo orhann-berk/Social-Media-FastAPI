@@ -5,10 +5,7 @@ from db.models import DbUser, DbPost, DbFriendRequest, RequestStatus
 
 def read_users(db: Session):
     retval = db.query(DbUser).all()
-    if retval:
-        return retval
-    return "No users found"
-
+    return retval
 
 def get_user(db: Session, user_id: int):
     retval = db.query(DbUser).filter(DbUser.id == user_id).first()
