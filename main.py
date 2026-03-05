@@ -2,16 +2,15 @@ import uvicorn
 from typing import List
 from fastapi import HTTPException, FastAPI, Depends, status
 from sqlalchemy.orm import Session
-from schemas import UserAuthModel, PostModel, UserBaseModel, PostCreate, PostOut, CommentCreate, CommentOut
+from schemas import UserAuthModel, UserBaseModel, PostCreate, PostOut, CommentCreate, CommentOut
 import crud
 from db.database import get_db, engine, Base
 from db import models
-Base.metadata.create_all(bind=engine)
 from auth_utils import get_current_user
 
 
 app = FastAPI()
-
+Base.metadata.create_all(bind=engine)
 
 @app.get("/users/all", response_model = List[UserBaseModel], tags=["users"]) #
 def get_users(db: Session = Depends(get_db)):
@@ -31,12 +30,12 @@ def add_user(user: UserAuthModel, db: Session = Depends(get_db)):
 
 @app.post("/login", tags=["login/logout"])
 def login_user(name: str, password: str, db: Session = Depends(get_db)):
-    return crud.login_user(db, name = name, password = password)
+    return crud.login_user(db, username = name, password = password)
 
 
 @app.get("/logout", tags=["login/logout"])
 def logout_user(name: str, password: str, db: Session = Depends(get_db)):
-    return crud.logout_user(db, name = name, password = password)
+    return crud.logout_user(db, username = name, password = password)
 
 
 @app.delete("/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT, tags=["user/delete"])
@@ -48,7 +47,7 @@ def delete_user(user_id: int, db: Session = Depends(get_db)):
 def update_user(user: UserAuthModel, user_id:int, db: Session = Depends(get_db)):
     return crud.update_user(db, user_id= user_id, name = user.name, email = user.email, password=user.password)
 
-@app.post("/", response_model=PostOut, status_code=status.HTTP_201_CREATED)
+@app.post("/posts", response_model=PostOut, status_code=status.HTTP_201_CREATED)
 def create_post(
     post_data: PostCreate,
     db: Session = Depends(get_db),
@@ -64,6 +63,7 @@ def create_post(
     db.commit()
     db.refresh(post)
     return post
+
 @app.get("/wall/me", response_model=List[PostOut])
 def get_my_wall(
     db: Session = Depends(get_db),
@@ -77,8 +77,6 @@ def get_my_wall(
         .all()
     )
 
-
-
 @app.get("/wall/{user_id}", response_model=List[PostOut])
 def get_user_wall(user_id: int, db: Session = Depends(get_db)):
     """Get a specific user's public wall."""
@@ -91,6 +89,7 @@ def get_user_wall(user_id: int, db: Session = Depends(get_db)):
         .order_by(models.Post.created_at.desc())
         .all()
     )
+
 @app.delete("/{post_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_post(
     post_id: int,
@@ -104,6 +103,7 @@ def delete_post(
         raise HTTPException(status_code=403, detail="Not authorized")
     db.delete(post)
     db.commit()
+
 @app.post("/{post_id}/comments", response_model=CommentOut, status_code=status.HTTP_201_CREATED)
 def add_comment(
     post_id: int,

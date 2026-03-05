@@ -1,15 +1,14 @@
-from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi import APIRouter, HTTPException, Depends, status
 from sqlalchemy.orm import Session
-from db.models import User, Post
 from typing import List
 
+from db.models import User, Post, Comment
 from db.database import get_db
-from schemas import PostCreate, PostOut, CommentCreate, CommentOut
 from db import models
-from auth_utils import get_current_user
+from schemas import PostCreate, PostOut, CommentCreate, CommentOut
+from auth_utils import get_current_user, verify_password
 
-
-router = APIRouter()
+router = APIRouter(prefix="/posts", tags=["Posts"])
 
 def read_users(db: Session):
     retval = db.query(User).all()
@@ -22,7 +21,7 @@ def get_user(db: Session, user_id: int):
 
 
 def add_user(db: Session, name:str, email:str, password:str, is_logged_in: bool):
-    user = User(name = name, email = email, password = password, is_logged_in = is_logged_in)
+    user = User(username = name, email = email, hashed_password = password)
     db.add(user)
     db.commit()
     db.refresh(user)
@@ -51,8 +50,8 @@ def update_user(db: Session, user_id: int, name: str, email: str, password: str)
         return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
 
 
-def login_user(db: Session, name: str, password: str):
-    matching_user = db.query(User).filter(User.name == name and User.password == password).first()
+def login_user(db: Session, username: str, password: str):
+    matching_user = db.query(User).filter(User.username == username).first()
     if matching_user:
         matching_user.is_logged_in = True
         db.commit()
@@ -75,7 +74,7 @@ def read_posts(db:Session, ):
 
 
 def logout_user(db: Session, name: str, password: str):
-    user_out = db.query(User).filter(User.name == name and User.password == password and User.is_logged_in == bool[True]).first()
+    user_out = db.query(User).filter(User.name == name and User.hashed_password == password and User.is_logged_in == bool[True]).first()
     if user_out:
         user_out.is_logged_in= False
         db.commit()
@@ -84,6 +83,7 @@ def logout_user(db: Session, name: str, password: str):
         return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
 
 # ─── Create Post ────────────────────────────────────────────────────────────
+@router.post("/posts", response_model=PostOut)
 def create_post(
     post_data: PostCreate,
     db: Session = Depends(get_db),
@@ -101,7 +101,8 @@ def create_post(
     return post
 
 
-# ─── Own Wall ───────────────────────────────────────────────────────────────
+# ─── Get My Wall ───────────────────────────────────────────────────────────────
+@router.get("/me", response_model=List[PostOut])
 def get_my_wall(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
@@ -114,9 +115,9 @@ def get_my_wall(
         .all()
     )
 
-
+# ─── Get User Wall ────────────────────────────────────────
+@router.get("/user/{user_id}", response_model=List[PostOut])
 def get_user_wall(user_id: int, db: Session = Depends(get_db)):
-    """Get a specific user's public wall."""
     user = db.query(models.User).filter(models.User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -127,6 +128,7 @@ def get_user_wall(user_id: int, db: Session = Depends(get_db)):
         .all()
     )
 # ─── Delete Post ─────────────────────────────────────────────────────────────
+@router.delete("/{post_id}")
 def delete_post(
     post_id: int,
     db: Session = Depends(get_db),
@@ -139,9 +141,10 @@ def delete_post(
         raise HTTPException(status_code=403, detail="Not authorized")
     db.delete(post)
     db.commit()
+    return {"message": "Post deleted"}
 
-
-# ─── Comments ─────────────────────────────────────────────────────────────────
+# ─── Add Comments ─────────────────────────────────────────────────────────────────
+@router.post("/{post_id}/comments", response_model=CommentOut)
 def add_comment(
     post_id: int,
     comment_data: CommentCreate,

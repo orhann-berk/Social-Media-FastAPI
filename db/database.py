@@ -1,7 +1,7 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 
-SQLALCHEMY_DATABASE_URL = "sqlite:///../social.db"
+SQLALCHEMY_DATABASE_URL = "sqlite:///./social.db"
 
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
@@ -19,5 +19,3 @@ def get_db():
     finally:
         # close the db
         db.close()
-
-Base.metadata.create_all(bind=engine)

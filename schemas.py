@@ -2,11 +2,32 @@ from pydantic import BaseModel, Field, EmailStr
 from typing import Optional, List
 from datetime import datetime
 
+class UserCreate(BaseModel):
+    username: str
+    email: EmailStr
+    password: str
+
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+
 class UserAuthModel(BaseModel):
     name: str
     password: str
     email: str
     is_logged_in: bool = Field(default=False)
+
+class UserOut (BaseModel):
+    id: int
+    username: str
+    email:EmailStr
+    class Config:
+        from_attributes = True
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
 
 class PostModel(BaseModel):
     title: str
@@ -16,14 +37,9 @@ class PostModel(BaseModel):
 class UserBaseModel(BaseModel):
     name: str
     email: str
-class UserOut (BaseModel):
-    id: int
-    username: str
-    email:EmailStr
 
-class Token(BaseModel):
-    access_token: str
-    token_type: str = "bearer"
+class CommentCreate(BaseModel):
+    content: str
 
 class CommentOut(BaseModel):
     id: int
@@ -33,9 +49,6 @@ class CommentOut(BaseModel):
 
     class Config:
         from_attributes = True
-
-class CommentCreate(BaseModel):
-    content: str
 
 class PostCreate(BaseModel):
     content: str
