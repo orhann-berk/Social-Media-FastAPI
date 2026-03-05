@@ -67,6 +67,9 @@ def get_pending_requests(user_id: int, db: Session = Depends(get_db)):
     """
     return crud.get_pending_requests(db=db, user_id = user_id)
 
+@app.put("/friends/request/{request_id}/accept", response_model=FriendRequestResponse, tags=["friend-request"])
+def accept_friend_request(request_id: int, db: Session = Depends(get_db)):
+    return crud.accept_friend_request(db=db, request_id = request_id)
 
 if __name__ == "__main__":
     # Important: disable reload while debugging

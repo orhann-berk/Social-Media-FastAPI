@@ -114,3 +114,17 @@ def get_pending_requests(db: Session, user_id: int):
                                                 DbFriendRequest.status == RequestStatus.pending).all()
 
     return requests
+
+def accept_friend_request(db: Session, request_id: int):
+    friend_request = db.query(DbFriendRequest).filter(DbFriendRequest.id == request_id).first()
+    if not friend_request:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail="This request does not exist.")
+    if friend_request.status != RequestStatus.pending:
+        raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE,
+                            detail="This request has already accepted.")
+
+    friend_request.status = RequestStatus.accepted
+    db.commit()
+    db.refresh(friend_request)
+    return friend_request
