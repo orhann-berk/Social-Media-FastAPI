@@ -128,3 +128,41 @@ def accept_friend_request(db: Session, request_id: int):
     db.commit()
     db.refresh(friend_request)
     return friend_request
+
+def reject_friend_request(db: Session, request_id: int):
+    friend_request = db.query(DbFriendRequest).filter(DbFriendRequest.id == request_id).first()
+
+    if not friend_request:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail="This request does not exist.")
+
+    if friend_request.status != RequestStatus.pending:
+        raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE,
+                            detail="You already replied to this request.")
+
+    friend_request.status = RequestStatus.rejected
+    db.commit()
+    db.refresh(friend_request)
+    return friend_request
+
+def list_friends(db: Session, user_id: int):
+    requests_as_sender = db.query(DbFriendRequest).filter(DbFriendRequest.status == RequestStatus.accepted,
+                                                          DbFriendRequest.sender_id == user_id).all()
+
+    requests_as_receiver = db.query(DbFriendRequest).filter(DbFriendRequest.status == RequestStatus.accepted,
+                                                            DbFriendRequest.receiver_id == user_id).all()
+
+    all_friends = requests_as_receiver + requests_as_sender
+
+    friends_ids = []
+    for request in all_friends:
+        if request.sender_id == user_id:
+            friends_ids.append(request.receiver_id)
+        else:
+            friends_ids.append(request.sender_id)
+
+    if not friends_ids:
+        return []
+
+    friends = db.query(DbUser).filter(DbUser.id.in_(friends_ids)).all()
+    return friends

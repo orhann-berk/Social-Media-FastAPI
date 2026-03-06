@@ -1,6 +1,6 @@
 import uvicorn
 from typing import List
-from fastapi import FastAPI, Depends, status
+from fastapi import FastAPI, Depends, status, HTTPException
 from sqlalchemy.orm import Session
 from schemas import *
 import crud
@@ -70,6 +70,19 @@ def get_pending_requests(user_id: int, db: Session = Depends(get_db)):
 @app.put("/friends/request/{request_id}/accept", response_model=FriendRequestResponse, tags=["friend-request"])
 def accept_friend_request(request_id: int, db: Session = Depends(get_db)):
     return crud.accept_friend_request(db=db, request_id = request_id)
+
+@app.put("/friends/request/{request_id}/reject", response_model=FriendRequestResponse, tags=["friend-request"])
+def reject_friend_request(request_id: int, db=Depends(get_db)):
+    return crud.reject_friend_request(db=db, request_id = request_id)
+
+@app.get("/friends/{user_id}", response_model=List[UserBaseModel], tags=["friend-request"])
+def get_friends(user_id: int, db: Session = Depends(get_db)):
+    db_user = crud.get_user(db, user_id = user_id)
+    if db_user == "User not found":
+        raise HTTPException(status_code=404, detail="User not found!")
+
+    return crud.list_friends(db=db, user_id = user_id)
+
 
 if __name__ == "__main__":
     # Important: disable reload while debugging
