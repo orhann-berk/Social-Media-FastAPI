@@ -1,133 +1,101 @@
 import uvicorn
 from typing import List
 from fastapi import HTTPException, FastAPI, Depends, status
+from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
-from schemas import UserAuthModel, UserBaseModel, PostCreate, PostOut, CommentCreate, CommentOut
+from schemas import UserAuthModel, UserBaseModel
 import crud
 from db.database import get_db, engine, Base
+from Posts import router as posts_router
+from db.hash import Hash
+from oauth2 import get_current_user, create_access_token
 from db import models
-from auth_utils import get_current_user
-
 
 app = FastAPI()
+app.include_router(posts_router)
+
 Base.metadata.create_all(bind=engine)
 
-@app.get("/users/all", response_model = List[UserBaseModel], tags=["users"]) #
-def get_users(db: Session = Depends(get_db)):
+
+@app.get("/users/all", response_model=List[UserBaseModel], tags=["users"])
+def get_users(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
     result = crud.read_users(db)
-    return result
+    return result, current_user
 
 
 @app.get("/user/{user_id}", tags=["users"])
-def get_user(user_id: int, db: Session = Depends(get_db)):
-    return crud.get_user(db, user_id = user_id)
+def get_user(
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+
+        return crud.get_user(db, user_id=user_id), current_user
 
 
 @app.post("/register", status_code=status.HTTP_201_CREATED, tags=["register"])
 def add_user(user: UserAuthModel, db: Session = Depends(get_db)):
-    return crud.add_user(db, name=user.name, email=user.email, password = user.password, is_logged_in = user.is_logged_in)
+    return crud.add_user(
+        db,
+        name=user.username,
+        email=user.email,
+        password=Hash.bcrypt(user.password),
+        is_logged_in=user.is_logged_in
+    )
 
 
-@app.post("/login", tags=["login/logout"])
-def login_user(name: str, password: str, db: Session = Depends(get_db)):
-    return crud.login_user(db, username = name, password = password)
+@app.post("/login")
+def login_user(form_data: OAuth2PasswordRequestForm = Depends(),
+               db: Session = Depends(get_db)):
+
+    user = crud.authenticate_user(db, form_data.username, form_data.password)
+
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+
+    access_token = create_access_token(
+        data={"sub": user.username}
+    )
+
+    return {
+        "access_token": access_token,
+        "token_type": "bearer"
+    }
 
 
 @app.get("/logout", tags=["login/logout"])
-def logout_user(name: str, password: str, db: Session = Depends(get_db)):
-    return crud.logout_user(db, username = name, password = password)
+def logout_user(
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    return crud.logout_user(db, username=current_user.username)
 
 
 @app.delete("/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT, tags=["user/delete"])
-def delete_user(user_id: int, db: Session = Depends(get_db)):
-    return crud.delete_user(db, user_id = user_id)
+def delete_user(user_id: int, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+    return crud.delete_user(db, user_id=user_id)
 
 
 @app.put("/users/{user_id}", status_code=status.HTTP_202_ACCEPTED, tags=["user/update"])
-def update_user(user: UserAuthModel, user_id:int, db: Session = Depends(get_db)):
-    return crud.update_user(db, user_id= user_id, name = user.name, email = user.email, password=user.password)
-
-@app.post("/posts", response_model=PostOut, status_code=status.HTTP_201_CREATED)
-def create_post(
-    post_data: PostCreate,
+def update_user(
+    user: UserAuthModel,
+    user_id: int,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
-    """Post an activity to the authenticated user's personal wall."""
-    post = models.Post(
-        content=post_data.content,
-        image_url=post_data.image_url,
-        author_id=current_user.id,
-    )
-    db.add(post)
-    db.commit()
-    db.refresh(post)
-    return post
-
-@app.get("/wall/me", response_model=List[PostOut])
-def get_my_wall(
-    db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
-):
-    """Get the authenticated user's own wall (all their posts)."""
-    return (
-        db.query(models.Post)
-        .filter(models.Post.author_id == current_user.id)
-        .order_by(models.Post.created_at.desc())
-        .all()
-    )
-
-@app.get("/wall/{user_id}", response_model=List[PostOut])
-def get_user_wall(user_id: int, db: Session = Depends(get_db)):
-    """Get a specific user's public wall."""
-    user = db.query(models.User).filter(models.User.id == user_id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    return (
-        db.query(models.Post)
-        .filter(models.Post.author_id == user_id)
-        .order_by(models.Post.created_at.desc())
-        .all()
-    )
-
-@app.delete("/{post_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_post(
-    post_id: int,
-    db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
-):
-    post = db.query(models.Post).filter(models.Post.id == post_id).first()
-    if not post:
-        raise HTTPException(status_code=404, detail="Post not found")
-    if post.author_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Not authorized")
-    db.delete(post)
-    db.commit()
-
-@app.post("/{post_id}/comments", response_model=CommentOut, status_code=status.HTTP_201_CREATED)
-def add_comment(
-    post_id: int,
-    comment_data: CommentCreate,
-    db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
-):
-    post = db.query(models.Post).filter(models.Post.id == post_id).first()
-    if not post:
-        raise HTTPException(status_code=404, detail="Post not found")
-
-    comment = models.Comment(
-        content=comment_data.content,
-        post_id=post_id,
-        author_id=current_user.id,
-    )
-    db.add(comment)
-    db.commit()
-    db.refresh(comment)
-    return comment
+    return crud.update_user(
+        db,
+        user_id=user_id,
+        name=user.username,
+        email=user.email,
+        password=Hash.bycrypt(user.password)
+    ), current_user
 
 
 if __name__ == "__main__":
-    # Important: disable reload while debugging
     uvicorn.run(
         "main:app",
         host="127.0.0.1",
@@ -135,4 +103,3 @@ if __name__ == "__main__":
         reload=True,
         log_level="debug",
     )
-

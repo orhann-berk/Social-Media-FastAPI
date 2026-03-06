@@ -1,6 +1,17 @@
 from pydantic import BaseModel, Field, EmailStr
 from typing import Optional, List
 from datetime import datetime
+from pydantic import BaseModel
+
+class UserBaseModel(BaseModel):
+    username: str
+    email: str
+
+class UserAuthModel(BaseModel):
+    username: str
+    email: str
+    password: str
+    is_logged_in: bool
 
 class UserCreate(BaseModel):
     username: str
@@ -10,13 +21,6 @@ class UserCreate(BaseModel):
 class LoginRequest(BaseModel):
     username: str
     password: str
-
-
-class UserAuthModel(BaseModel):
-    name: str
-    password: str
-    email: str
-    is_logged_in: bool = Field(default=False)
 
 class UserOut (BaseModel):
     id: int
@@ -29,17 +33,15 @@ class Token(BaseModel):
     access_token: str
     token_type: str = "bearer"
 
-class PostModel(BaseModel):
-    title: str
-    image_url: str
-    body: str
 
-class UserBaseModel(BaseModel):
-    name: str
-    email: str
+class PostCreate(BaseModel):
+    content: str
+    image_url: Optional[str] = None
+
 
 class CommentCreate(BaseModel):
     content: str
+
 
 class CommentOut(BaseModel):
     id: int
@@ -50,9 +52,6 @@ class CommentOut(BaseModel):
     class Config:
         from_attributes = True
 
-class PostCreate(BaseModel):
-    content: str
-    image_url: Optional[str] = None
 
 class PostOut(BaseModel):
     id: int

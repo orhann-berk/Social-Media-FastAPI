@@ -8,9 +8,9 @@ from db.database import Base
 class User(Base):
     __tablename__ = "users"
     id = Column(Integer, primary_key=True, index=True)
-    username = Column(String)
-    email = Column(String, unique=True)
-    hashed_password = Column(String)
+    username = Column(String, unique=True, nullable=False, index=True)
+    email = Column(String, unique=True, nullable=False, index=True)
+    hashed_password = Column(String, nullable=False)
     is_logged_in = Column(Boolean, default=False)
 
     posts = relationship("Post", back_populates="author")
@@ -24,12 +24,10 @@ class Post(Base):
     content = Column(Text, nullable=False)
     image_url = Column(String, nullable=True)
     author_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     author = relationship("User", back_populates="posts")
-    comments = relationship("Comment", back_populates="post", cascade="all, delete-orphan")
+    comments = relationship("Comment", back_populates="post")
 
 
 class Comment(Base):
@@ -39,7 +37,6 @@ class Comment(Base):
     content = Column(Text, nullable=False)
     post_id = Column(Integer, ForeignKey("posts.id"), nullable=False)
     author_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     post = relationship("Post", back_populates="comments")
