@@ -23,7 +23,7 @@ def get_users(
     current_user: models.User = Depends(get_current_user)
 ):
     result = crud.read_users(db)
-    return result, current_user
+    return result
 
 
 @app.get("/user/{user_id}", tags=["users"])
@@ -33,7 +33,7 @@ def get_user(
     current_user: models.User = Depends(get_current_user)
 ):
 
-        return crud.get_user(db, user_id=user_id), current_user
+        return crud.get_user(db, user_id=user_id)
 
 
 @app.post("/register", status_code=status.HTTP_201_CREATED, tags=["register"])
@@ -43,7 +43,6 @@ def add_user(user: UserAuthModel, db: Session = Depends(get_db)):
         name=user.username,
         email=user.email,
         password=Hash.bcrypt(user.password),
-        is_logged_in=user.is_logged_in
     )
 
 
@@ -71,7 +70,7 @@ def logout_user(
     current_user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    return crud.logout_user(db, username=current_user.username)
+    return {"message": "Logged out successfully"}
 
 
 @app.delete("/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT, tags=["user/delete"])
@@ -91,8 +90,8 @@ def update_user(
         user_id=user_id,
         name=user.username,
         email=user.email,
-        password=Hash.bycrypt(user.password)
-    ), current_user
+        password=Hash.bcrypt(user.password)
+    )
 
 
 if __name__ == "__main__":

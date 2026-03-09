@@ -11,7 +11,6 @@ class UserAuthModel(BaseModel):
     username: str
     email: str
     password: str
-    is_logged_in: bool
 
 class UserCreate(BaseModel):
     username: str

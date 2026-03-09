@@ -1,9 +1,20 @@
 from sqlalchemy.orm import Session
+from sqlalchemy.sql.functions import current_user
+from db.hash import Hash
 from db.models import User
 from fastapi import APIRouter, HTTPException, status
 from oauth2 import create_access_token
 from db import models
+
 router = APIRouter(prefix="/posts", tags=["Posts"])
+
+def authenticate_user(db: Session, username: str, password: str):
+    user = db.query(User).filter(User.username == username).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if not Hash.verify(password, user.hashed_password):
+        raise HTTPException(status_code=401, detail="Incorrect password")
+    return user
 
 def read_users(db: Session):
     retval = db.query(User).all()
@@ -16,7 +27,7 @@ def get_user(db: Session, user_id: int):
 
 
 def add_user(db: Session, name:str, email:str, password:str, is_logged_in: bool):
-    user = User(username = name, email = email, password = password)
+    user = User(username = name, email = email, hashed_password = Hash.bcrypt(password))
     db.add(user)
     db.commit()
     db.refresh(user)
@@ -25,7 +36,7 @@ def add_user(db: Session, name:str, email:str, password:str, is_logged_in: bool)
 
 def delete_user(db: Session, user_id: int):
     user = db.query(User).filter(User.id == user_id).first()
-    if user.is_logged_in:
+    if current_user.is_logged_in:
         db.delete(user)
         db.commit()
         return HTTPException(status_code=status.HTTP_200_OK)
@@ -47,7 +58,7 @@ def update_user(db: Session, user_id: int, name: str, email: str, password: str)
 
 def login_user(db: Session, username: str, password: str):
     user = db.query(User).filter(User.username == username).first()
-    if not user:
+    if not Hash.verify(password, user.hashed_password):
      raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
     access_token = create_access_token(data={"sub": str(user.id)})
@@ -56,8 +67,8 @@ def login_user(db: Session, username: str, password: str):
 
 # ─── Posts ───────────────────────────────────────────────────────────────────
 
-def create_post(db: Session, content: str, image_url: str):
-    post = models.Post(content=content, image_url=image_url)
+def create_post(db: Session, content: str, image_url: str | None, author_id:int):
+    post = models.Post(content=content, image_url=image_url, author_id=author_id)
     db.add(post)
     db.commit()
     db.refresh(post)
@@ -101,7 +112,7 @@ def delete_post(db: Session, post: models.Post, current_user: models.User):
 # ─── Comments ────────────────────────────────────────────────────────────────
 
 def create_comment(db: Session, content: str, post_id: int, author_id: int):
-    comment = models.Comment(content=content, post_id=post_id)
+    comment = models.Comment(content=content, post_id=post_id, author_id=author_id)
     db.add(comment)
     db.commit()
     db.refresh(comment)

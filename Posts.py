@@ -19,7 +19,7 @@ def create_post(
         db: Session = Depends(get_db),
         current_user: models.User = Depends(get_current_user)
 ):
-    return crud.create_post(db, post, current_user.id)
+    return crud.create_post(db, post.content, post.image_url, current_user.id)
 
 
 # ─── Own Wall ────────────────────────────────────────────────────────────────
