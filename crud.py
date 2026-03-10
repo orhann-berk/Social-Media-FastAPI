@@ -27,7 +27,7 @@ def get_user(db: Session, user_id: int):
 
 
 def add_user(db: Session, name:str, email:str, password:str):
-    user = User(username = name, email = email, hashed_password = Hash.bcrypt(password))
+    user = User(username = name, email = email, hashed_password = Hash.hash_password(password))
     db.add(user)
     db.commit()
     db.refresh(user)
