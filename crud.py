@@ -18,12 +18,16 @@ def authenticate_user(db: Session, username: str, password: str):
 
 def read_users(db: Session):
     retval = db.query(User).all()
-    return retval
+    if retval:
+        return retval
+    return "No users found"
 
 
 def get_user(db: Session, user_id: int):
     retval = db.query(User).filter(User.id == user_id).first()
-    return retval
+    if retval:
+        return retval
+    return  "User not found"
 
 
 def add_user(db: Session, name:str, email:str, password:str):
@@ -39,21 +43,23 @@ def delete_user(db: Session, user_id: int):
     if current_user.is_logged_in:
         db.delete(user)
         db.commit()
-        return HTTPException(status_code=status.HTTP_200_OK)
+        return "User deleted"
     else:
-        return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+        return "User must login"
 
 
 def update_user(db: Session, user_id: int, name: str, email: str, password: str):
     db_user = db.query(User).filter(User.id == user_id).first()
-    if db_user.is_logged_in:
+    if not db_user:
+        return "User not found"
+    elif db_user.is_logged_in:
         db_user.name = name
         db_user.email = email
         db_user.password = password
         db.commit()
-        return HTTPException(status_code=status.HTTP_200_OK)
+        return "User updated successfully"
     else:
-        return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+        return "User must login"
 
 
 def login_user(db: Session, username: str, password: str):

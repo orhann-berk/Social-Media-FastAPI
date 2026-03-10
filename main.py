@@ -17,7 +17,7 @@ app.include_router(posts_router)
 Base.metadata.create_all(bind=engine)
 
 
-@app.get("/users/all", response_model=List[UserBaseModel], tags=["users"])
+@app.get("/users/all", response_model=List[UserBaseModel], tags=["user"])
 def get_users(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
@@ -26,7 +26,7 @@ def get_users(
     return result
 
 
-@app.get("/user/{user_id}", tags=["users"])
+@app.get("/user/{user_id}", tags=["user"])
 def get_user(
     user_id: int,
     db: Session = Depends(get_db),
@@ -36,7 +36,7 @@ def get_user(
         return crud.get_user(db, user_id=user_id)
 
 
-@app.post("/register", status_code=status.HTTP_201_CREATED, tags=["register"])
+@app.post("/register", status_code=status.HTTP_201_CREATED, tags=["user"])
 def add_user(user: UserAuthModel, db: Session = Depends(get_db)):
     return crud.add_user(
         db,
@@ -46,7 +46,7 @@ def add_user(user: UserAuthModel, db: Session = Depends(get_db)):
     )
 
 
-@app.post("/login")
+@app.post("/login", status_code=status.HTTP_200_OK, tags=["user"])
 def login_user(form_data: OAuth2PasswordRequestForm = Depends(),
                db: Session = Depends(get_db)):
 
@@ -64,7 +64,7 @@ def login_user(form_data: OAuth2PasswordRequestForm = Depends(),
     }
 
 
-@app.get("/logout", tags=["login/logout"])
+@app.get("/logout", tags=["user"], status_code=status.HTTP_200_OK)
 def logout_user(
     current_user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -72,12 +72,12 @@ def logout_user(
     return {"message": "Logged out successfully"}
 
 
-@app.delete("/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT, tags=["user/delete"])
+@app.delete("/user/{user_id}/delete", status_code=status.HTTP_202_ACCEPTED, tags=["user"])
 def delete_user(user_id: int, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
     return crud.delete_user(db, user_id=user_id)
 
 
-@app.put("/users/{user_id}", status_code=status.HTTP_202_ACCEPTED, tags=["user/update"])
+@app.put("/users/{user_id}/update", status_code=status.HTTP_202_ACCEPTED, tags=["user"])
 def update_user(
     user: UserAuthModel,
     user_id: int,
