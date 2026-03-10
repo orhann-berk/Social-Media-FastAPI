@@ -42,7 +42,7 @@ def add_user(user: UserAuthModel, db: Session = Depends(get_db)):
         db,
         name=user.username,
         email=user.email,
-        password=Hash.bcrypt(user.password),
+        password=user.password,
     )
 
 
@@ -90,7 +90,7 @@ def update_user(
         user_id=user_id,
         name=user.username,
         email=user.email,
-        password=Hash.bcrypt(user.password)
+        password=user.password
     )
 
 
