@@ -1,6 +1,8 @@
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
+from sqlalchemy import or_, and_
 from db.models import DbUser, DbPost, DbFriendRequest, RequestStatus
+
 
 
 def read_users(db: Session):
@@ -94,8 +96,12 @@ def create_friend_request(db: Session, sender_id: int, receiver_id: int):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail="Receiver does not exist.")
 
-    existing_request = db.query(DbFriendRequest).filter(DbFriendRequest.sender_id == sender_id,
-                                                        DbFriendRequest.receiver_id == receiver_id).first()
+    existing_request = db.query(DbFriendRequest).filter(
+        or_(
+            and_(DbFriendRequest.sender_id == sender_id, DbFriendRequest.receiver_id == receiver_id),
+            and_(DbFriendRequest.receiver_id == sender_id, DbFriendRequest.sender_id == receiver_id)
+        )
+    ).first()
 
     if existing_request:
         raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE, detail="You have already sent a friend.")
