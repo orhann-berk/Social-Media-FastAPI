@@ -1,43 +1,52 @@
-from fastapi import HTTPException, status
+from fastapi import APIRouter, HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, and_
-from db.models import DbUser, DbPost, DbFriendRequest, RequestStatus
+from sqlalchemy.sql.functions import current_user
+from db.hash import Hash
+from db.models import User, DbFriendRequest, RequestStatus
+from oauth2 import create_access_token
+from db import models
 
+router = APIRouter(prefix="/posts", tags=["Posts"])
 
+def authenticate_user(db: Session, username: str, password: str):
+    user = db.query(User).filter(User.username == username).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if not Hash.verify(password, user.hashed_password):
+        raise HTTPException(status_code=401, detail="Incorrect password")
+    return user
 
 def read_users(db: Session):
-    retval = db.query(DbUser).all()
-    return retval
+    retval = db.query(User).all()
+    if retval:
+        return retval
+    return "No users found"
 
 def get_user(db: Session, user_id: int):
-    retval = db.query(DbUser).filter(DbUser.id == user_id).first()
+    retval = db.query(User).filter(User.id == user_id).first()
     if retval:
         return retval
     return  "User not found"
 
-
 def add_user(db: Session, name:str, email:str, password:str):
-    user = DbUser(name = name, email = email, password = password, is_logged_in = False)
+    user = User(username = name, email = email, hashed_password = Hash.hash_password(password))
     db.add(user)
     db.commit()
     db.refresh(user)
     return user
 
-
 def delete_user(db: Session, user_id: int):
-    user = db.query(DbUser).filter(DbUser.id == user_id).first()
-    if not user:
-        return "User not found"
-    elif user.is_logged_in:
+    user = db.query(User).filter(User.id == user_id).first()
+    if current_user.is_logged_in:
         db.delete(user)
         db.commit()
         return "User deleted"
     else:
         return "User must login"
 
-
 def update_user(db: Session, user_id: int, name: str, email: str, password: str):
-    db_user = db.query(DbUser).filter(DbUser.id == user_id).first()
+    db_user = db.query(User).filter(User.id == user_id).first()
     if not db_user:
         return "User not found"
     elif db_user.is_logged_in:
@@ -49,32 +58,17 @@ def update_user(db: Session, user_id: int, name: str, email: str, password: str)
     else:
         return "User must login"
 
+def login_user(db: Session, username: str, password: str):
+    user = db.query(User).filter(User.username == username).first()
+    if not Hash.verify(password, user.hashed_password):
+     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
-def login_user(db: Session, name: str, password: str):
-    matching_user = db.query(DbUser).filter(DbUser.name == name, DbUser.password == password).first()
-    if matching_user:
-        matching_user.is_logged_in = True
-        db.commit()
-        return "Login successful"
-    else:
-        return "Login unsuccessful"
+    access_token = create_access_token(data={"sub": str(user.id)})
 
-
-def add_post(db: Session, title: str, body: str, image_url: str):
-    post = DbPost(title = title, body = body, image_url = image_url)
-    db.add(post)
-    db.commit()
-    db.refresh(post)
-    return post
-
-
-def read_posts(db:Session):
-    retval = db.query(DbPost).all()
-    return retval
-
+    return {"access_token": access_token, "token_type": "bearer"}
 
 def logout_user(db: Session, name: str, password: str):
-    user_out = db.query(DbUser).filter(DbUser.name == name, DbUser.password == password).first()
+    user_out = db.query(User).filter(User.username == name, User.hashed_password == Hash.hash_password(password)).first()
     if not user_out:
         return "User cannot found"
     elif user_out.is_logged_in:
@@ -86,12 +80,56 @@ def logout_user(db: Session, name: str, password: str):
     else:
         return "Logout unsuccessful"
 
+def create_post(db: Session, content: str, image_url: str | None, author_id:int):
+    post = models.Post(content=content, image_url=image_url, author_id=author_id)
+    db.add(post)
+    db.commit()
+    db.refresh(post)
+    return post
+
+def get_post(db: Session, post_id: int):
+    post = db.query(models.Post).filter(models.Post.id == post_id).first()
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+    return post
+
+def get_posts_by_user(db: Session, user_id: int):
+    return (
+        db.query(models.Post)
+        .filter(models.Post.author_id == user_id)
+        .order_by(models.Post.created_at.desc())
+        .all()
+    )
+
+def get_friends_feed(db: Session, friend_ids: list[int]):
+    if not friend_ids:
+        return []
+    return (
+        db.query(models.Post)
+        .filter(models.Post.author_id.in_(friend_ids))
+        .order_by(models.Post.created_at.desc())
+        .all()
+    )
+
+def delete_post(db: Session, post: models.Post, current_user: models.User):
+    if post.author_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    db.delete(post)
+    db.commit()
+
+def create_comment(db: Session, content: str, post_id: int, author_id: int):
+    comment = models.Comment(content=content, post_id=post_id, author_id=author_id)
+    db.add(comment)
+    db.commit()
+    db.refresh(comment)
+    return comment
+
 def create_friend_request(db: Session, sender_id: int, receiver_id: int):
     if sender_id == receiver_id:
         raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE,
                             detail="You can not send a friend request to yourself.")
 
-    receiver = db.query(DbUser).filter(DbUser.id == receiver_id).first()
+    receiver = db.query(User).filter(User.id == receiver_id).first()
     if not receiver:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail="Receiver does not exist.")
@@ -170,5 +208,5 @@ def list_friends(db: Session, user_id: int):
     if not friends_ids:
         return []
 
-    friends = db.query(DbUser).filter(DbUser.id.in_(friends_ids)).all()
+    friends = db.query(User).filter(User.id.in_(friends_ids)).all()
     return friends

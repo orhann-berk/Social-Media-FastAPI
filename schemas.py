@@ -1,23 +1,67 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, EmailStr
+from typing import Optional, List
+from datetime import datetime
 from db.models import RequestStatus
 
-class UserAuthModel(BaseModel):
-    name: str
-    password: str
+class UserBaseModel(BaseModel):
+    username: str
     email: str
+
+class UserAuthModel(BaseModel):
+    username: str
+    email: str
+    password: str
+
+class UserCreate(BaseModel):
+    username: str
+    email: EmailStr
+    password: str
+
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+class UserOut (BaseModel):
+    id: int
+    username: str
+    email:EmailStr
+    class Config:
+        from_attributes = True
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+
+class PostCreate(BaseModel):
+    content: str
+    image_url: Optional[str] = None
+
+class CommentCreate(BaseModel):
+    content: str
+
+class CommentOut(BaseModel):
+    id: int
+    content: str
+    author: UserOut
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class PostOut(BaseModel):
+    id: int
+    content: str
+    image_url: Optional[str]
+    author: UserOut
+    created_at: datetime
+    comments: List[CommentOut] = []
+
+    class Config:
+        from_attributes = True
 
 class UserUpdateModel(BaseModel):
-    name: str
+    username: str
     password: str
-    email: str
-
-class PostModel(BaseModel):
-    title: str
-    image_url: str
-    body: str
-
-class UserBaseModel(BaseModel):
-    name: str
     email: str
 
 class FriendRequestCreate(BaseModel):
