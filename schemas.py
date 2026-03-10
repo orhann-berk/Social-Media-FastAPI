@@ -62,3 +62,12 @@ class PostOut(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class TopicModel(BaseModel):
+    title: str
+    discussions: List[DiscussionModel] = []
+
+
+class DiscussionModel(BaseModel):
+    name: str

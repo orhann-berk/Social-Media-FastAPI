@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from sqlalchemy.sql.functions import current_user
 from db.hash import Hash
-from db.models import User
+from db.models import User, Discussion, Topic
 from fastapi import APIRouter, HTTPException, status
 from oauth2 import create_access_token
 from db import models
@@ -123,4 +123,36 @@ def create_comment(db: Session, content: str, post_id: int, author_id: int):
     db.commit()
     db.refresh(comment)
     return comment
+
+
+def add_topic(db:Session, title:str):
+    topic = Topic(title = title)
+    db.add(topic)
+    db.commit()
+    db.refresh(topic)
+    return topic
+
+
+def read_topics(db: Session):
+    retval = db.query(Topic).all()
+    if retval:
+        return retval
+    raise HTTPException(status_code=404, detail="No topics found")
+
+
+def add_disc(db: Session, name: str, topic_id: int):
+    topic = db.query(Topic).filter(Topic.id == topic_id).first()
+    disc = Discussion(name = name)
+    topic.discussions.append(disc)
+    db.add(disc)
+    db.commit()
+    db.refresh(disc)
+    return disc
+
+def read_disc(db: Session):
+    retval = db.query(Discussion).all()
+    if retval:
+        return retval
+    raise HTTPException(status_code=404, detail="No discussions found")
+
 
