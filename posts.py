@@ -63,9 +63,9 @@ def delete_post(
 ):
     post = db.query(models.Post).filter(models.Post.id == post_id).first()
     if not post:
-        raise HTTPException(status_code=404, detail="Post not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found")
     if post.author_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Not authorized")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authorized")
     db.delete(post)
     db.commit()
 

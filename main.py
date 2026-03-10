@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from schemas import UserAuthModel, UserBaseModel
 import crud
 from db.database import get_db, engine, Base
-from Posts import router as posts_router
+from posts import router as posts_router
 from db.hash import Hash
 from oauth2 import get_current_user, create_access_token
 from db import models
@@ -42,7 +42,7 @@ def add_user(user: UserAuthModel, db: Session = Depends(get_db)):
         db,
         name=user.username,
         email=user.email,
-        password=Hash.bcrypt(user.password),
+        password=user.password,
     )
 
 
@@ -90,7 +90,7 @@ def update_user(
         user_id=user_id,
         name=user.username,
         email=user.email,
-        password=Hash.bcrypt(user.password)
+        password=Hash.hash(user.password)
     )
 
 
@@ -99,6 +99,6 @@ if __name__ == "__main__":
         "main:app",
         host="127.0.0.1",
         port=8000,
-        reload=True,
+        reload=False,
         log_level="debug",
     )
