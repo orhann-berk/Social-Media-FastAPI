@@ -54,7 +54,6 @@ def login_user(form_data: OAuth2PasswordRequestForm = Depends(),
 
     if not user:
         raise HTTPException(status_code=401, detail="Invalid credentials")
-
     access_token = create_access_token(
         data={"sub": user.username}
     )
