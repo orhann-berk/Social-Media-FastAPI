@@ -178,6 +178,42 @@ def add_member_to_topic(db:Session, topic_id: int, user_id: int, current_user_id
 
     return topic
 
+
+def add_admin_to_topic(db:Session, topic_id: int, user_id: int, current_user_id: int):
+    # take the topic data and add admin to topic
+    topic = db.query(Topic).filter(Topic.id == topic_id).first()
+    if not topic:
+        raise HTTPException(status_code=404, detail="Topic not found")
+
+    # fetch the current admin with auth
+    current_admin = db.query(Admin).filter(Admin.user_id == current_user_id).first()
+    if not current_admin or current_admin not in topic.admins:
+        raise HTTPException(status_code=403, detail="You are not admin of this topic")
+
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # take the user id and find user by it and add as an admin to the topic
+    new_admin = db.query(Admin).filter(Admin.user_id == user_id).first()
+    # if there is no record in admin table, add it based on user_id
+    if not new_admin:
+        new_admin = Admin(
+            user_id = user.id,
+            name = user.username
+        )
+        db.add(new_admin)
+        db.commit()
+        db.refresh(new_admin)
+
+    if new_admin not in topic.admins:
+        topic.admins.append(new_admin)
+        db.commit()
+        db.refresh(topic)
+
+    return topic
+
+
 def read_topics(db: Session):
     retval = db.query(Topic).all()
     if retval:
@@ -185,14 +221,24 @@ def read_topics(db: Session):
     raise HTTPException(status_code=404, detail="No topics found")
 
 
-def add_disc(db: Session, name: str, topic_id: int):
+def add_disc(db: Session, name: str, topic_id: int, current_user_id: int):
     topic = db.query(Topic).filter(Topic.id == topic_id).first()
-    disc = Discussion(name = name)
-    topic.discussions.append(disc)
-    db.add(disc)
+    if not topic:
+        raise HTTPException(status_code=404, detail="Topic not found")
+    #  we fetch user, only members can add discussions
+    user = db.query(User).filter(User.id == current_user_id).first()
+    # check if the user on the members
+    if user not in topic.members:
+        raise HTTPException(status_code=403, detail="Only members can add discussion")
+
+    new_disc = Discussion(name = name)
+    topic.discussions.append(new_disc)
+
+    db.add(new_disc)
     db.commit()
-    db.refresh(disc)
-    return disc
+    db.refresh(new_disc)
+
+    return new_disc
 
 def read_disc(db: Session):
     retval = db.query(Discussion).all()

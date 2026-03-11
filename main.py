@@ -3,7 +3,8 @@ from typing import List
 from fastapi import HTTPException, FastAPI, Depends, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
-from schemas import UserAuthModel, UserBaseModel, TopicModel, DiscussionModel, AddTopicModel, AddMemberModel
+from schemas import UserAuthModel, UserBaseModel, TopicModel, DiscussionModel, AddTopicModel, AddMemberModel, \
+    AddAdminModel
 import crud
 from db.database import get_db, engine, Base
 from Posts import router as posts_router
@@ -107,14 +108,29 @@ def get_topics(db: Session = Depends(get_db), current_user: models.User = Depend
 
 
 @app.post("/topics/{topic_id}/discussion", status_code=status.HTTP_201_CREATED, tags=["topics"])
-def add_disc(topic_id: int, disc: DiscussionModel, db:Session = Depends(get_db)):
-    return crud.add_disc(db, name= disc.name, topic_id = topic_id)
+def add_disc(
+        topic_id: int,
+        disc: DiscussionModel,
+        db:Session = Depends(get_db),
+        current_user: models.User = Depends(get_current_user)
+):
+    return crud.add_disc(db, name= disc.name, topic_id = topic_id, current_user_id = current_user.id)
 
 
 @app.get("/topics/{topic_id}/discussion/all", status_code = status.HTTP_200_OK, tags=["topics"])
-def get_disc(db: Session = Depends(get_db)):
+def get_disc(db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
     result = crud.read_disc(db)
     return result
+
+
+@app.post("/topics/{topic_id}/add-admin", status_code=status.HTTP_201_CREATED, tags=["topics"])
+def add_admin_to_topic(
+        topic_id:int,
+        admin_data: AddAdminModel,
+        db: Session = Depends(get_db),
+        current_user: models.User = Depends(get_current_user)
+):
+    return crud.add_admin_to_topic(db, topic_id, admin_data.user_id, current_user.id)
 
 
 @app.post("/topics/{topic_id}/add-member", status_code=status.HTTP_201_CREATED, tags=["topics"])
@@ -125,6 +141,9 @@ def add_member_to_topic(
         current_user: models.User = Depends(get_current_user),
 ):
     return crud.add_member_to_topic(db, topic_id, member.user_id, current_user.id)
+
+
+
 
 
 if __name__ == "__main__":
