@@ -4,7 +4,7 @@ from fastapi import HTTPException, FastAPI, Depends, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from schemas import UserAuthModel, UserBaseModel, TopicModel, DiscussionModel, AddTopicModel, AddMemberModel, \
-    AddAdminModel
+    AddAdminModel, UpdateTopicModel, UpdateDiscussionModel
 import crud
 from db.database import get_db, engine, Base
 from Posts import router as posts_router
@@ -13,7 +13,7 @@ from oauth2 import get_current_user, create_access_token
 from db import models
 
 app = FastAPI()
-app.include_router(posts_router)
+
 
 Base.metadata.create_all(bind=engine)
 
@@ -94,20 +94,20 @@ def update_user(
     )
 
 
-@app.post("/topics/add", status_code=status.HTTP_201_CREATED, tags=["topics"])
+@app.post("/topics/add", status_code=status.HTTP_201_CREATED, tags=["topic"])
 def add_topic(topic: AddTopicModel,
               db: Session = Depends(get_db),
               current_user: models.User = Depends(get_current_user)):
     return crud.add_topic(db, topic.title, current_user.id)
 
 
-@app.get("/topics/all", status_code = status.HTTP_200_OK,response_model=List[TopicModel], tags=["topics"])
+@app.get("/topics/all", status_code = status.HTTP_200_OK,response_model=List[TopicModel], tags=["topic"])
 def get_topics(db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
     result = crud.read_topics(db)
     return result
 
 
-@app.post("/topics/{topic_id}/discussion", status_code=status.HTTP_201_CREATED, tags=["topics"])
+@app.post("/topics/{topic_id}/discussion", status_code=status.HTTP_201_CREATED, tags=["topic"])
 def add_discussion_to_topic(
         topic_id: int,
         disc: DiscussionModel,
@@ -117,13 +117,13 @@ def add_discussion_to_topic(
     return crud.add_disc(db, name= disc.name, topic_id = topic_id, current_user_id = current_user.id)
 
 
-@app.get("/topics/{topic_id}/discussion/all", status_code = status.HTTP_200_OK, tags=["topics"])
+@app.get("/topics/{topic_id}/discussion/all", status_code = status.HTTP_200_OK, tags=["topic"])
 def get_all_topic_discussions(db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
     result = crud.read_disc(db)
     return result
 
 
-@app.post("/topics/{topic_id}/add-admin", status_code=status.HTTP_201_CREATED, tags=["topics"])
+@app.post("/topics/{topic_id}/add-admin", status_code=status.HTTP_201_CREATED, tags=["topic"])
 def add_admin_to_topic(
         topic_id:int,
         admin_data: AddAdminModel,
@@ -133,7 +133,7 @@ def add_admin_to_topic(
     return crud.add_admin_to_topic(db, topic_id, admin_data.user_id, current_user.id)
 
 
-@app.post("/topics/{topic_id}/add-member", status_code=status.HTTP_201_CREATED, tags=["topics"])
+@app.post("/topics/{topic_id}/add-member", status_code=status.HTTP_201_CREATED, tags=["topic"])
 def add_member_to_topic(
         topic_id: int,
         member: AddMemberModel,
@@ -143,7 +143,7 @@ def add_member_to_topic(
     return crud.add_member_to_topic(db, topic_id, member.user_id, current_user.id)
 
 
-@app.delete("/topics/{topic_id}/members/{user_id}", status_code=status.HTTP_200_OK, tags=["topics"])
+@app.delete("/topics/{topic_id}/members/{user_id}", status_code=status.HTTP_200_OK, tags=["topic"])
 def remove_member_from_topic(
         topic_id: int,
         user_id: int,
@@ -153,13 +153,37 @@ def remove_member_from_topic(
     return crud.remove_member_from_topic(db, topic_id, user_id, current_user.id)
 
 
-@app.delete("/topics/{topic_id}/delete-admin", status_code=status.HTTP_200_OK, tags=["topics"])
+@app.delete("/topics/{topic_id}/delete-admin", status_code=status.HTTP_200_OK, tags=["topic"])
 def delete_admin_from_topic(
         topic_id: int,
         db: Session = Depends(get_db),
         current_user: models.User = Depends(get_current_user),
 ):
     return crud.delete_admin_from_topic(db, topic_id, current_user.id)
+
+
+@app.put("/topics/{topic_id}", status_code=status.HTTP_200_OK, tags=["topic"])
+def update_topic(
+        topic_id: int,
+        topic_data: UpdateTopicModel,
+        db: Session = Depends(get_db),
+        current_user: models.User = Depends(get_current_user),
+):
+    return crud.update_topic(db, topic_id, topic_data.title, current_user.id)
+
+
+@app.put("/topics/{topic_id}/discussions/{discussion_id}", status_code=status.HTTP_200_OK, tags=["topic"])
+def update_discussion(
+        topic_id: int,
+        discussion_id: int,
+        disc_data: UpdateDiscussionModel,
+        db:Session = Depends(get_db),
+        current_user: models.User = Depends(get_current_user)
+):
+    return crud.update_discussion(db, topic_id, discussion_id, disc_data.name, current_user.id)
+
+
+app.include_router(posts_router)
 
 if __name__ == "__main__":
     uvicorn.run(

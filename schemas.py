@@ -86,3 +86,9 @@ class AddMemberModel(BaseModel):
 
 class AddAdminModel(BaseModel):
     user_id: int
+
+class UpdateTopicModel(BaseModel):
+    title: str
+
+class UpdateDiscussionModel(BaseModel):
+    name: str

@@ -289,3 +289,40 @@ def delete_admin_from_topic(db: Session, topic_id: int, current_user_id: int):
 
     return {"message": "You removed yourself from admin list"}
 
+
+def update_topic(db: Session, topic_id: int, title: str, current_user_id: int):
+    topic = db.query(Topic).filter(Topic.id == topic_id).first()
+    if not topic:
+        raise HTTPException(status_code=404, detail="Topic not found")
+
+    current_admin = db.query(Admin).filter(Admin.user_id == current_user_id).first()
+    if not current_admin or current_admin not in topic.admins:
+        raise HTTPException(status_code=403, detail="You are not admin of this topic")
+
+    topic.title = title
+    db.commit()
+    db.refresh(topic)
+
+    return topic
+
+
+def update_discussion(db: Session, topic_id: int, discussion_id: int, name: str, current_user_id: int):
+    topic = db.query(Topic).filter(Topic.id == topic_id).first()
+    if not topic:
+        raise HTTPException(status_code=404, detail="Topic not found")
+
+    current_admin = db.query(Admin).filter(Admin.user_id == current_user_id).first()
+    if not current_admin or current_admin not in topic.admins:
+        raise HTTPException(status_code=403, detail="You are not admin of this topic")
+
+    discussion = db.query(Discussion).filter(Discussion.id == discussion_id).first()
+    if not discussion:
+        raise HTTPException(status_code=404, detail="Discussion not found")
+
+    if discussion.topic_id != topic_id:
+        raise HTTPException(status_code=400, detail="This discussion does not belong to this topic")
+
+    discussion.name = name
+    db.commit()
+    db.refresh(discussion)
+    return discussion
