@@ -270,3 +270,22 @@ def remove_member_from_topic(db: Session, topic_id: int, user_id: int, current_u
     return {"message": "Member removed from topic"}
 
 
+def delete_admin_from_topic(db: Session, topic_id: int, current_user_id: int):
+    topic = db.query(Topic).filter(Topic.id == topic_id).first()
+    if not topic:
+        raise HTTPException(status_code=404, detail="Topic not found")
+
+    current_admin = db.query(Admin).filter(Admin.user_id == current_user_id).first()
+    if not current_admin or current_admin not in topic.admins:
+        raise HTTPException(status_code=403, detail="You are not admin of this topic")
+
+    # if there is only one admin, admin can't delete himself
+    if len(topic.admins) == 1:
+        raise HTTPException(status_code=400, detail="You cannot leave admin list because this topic has only one admin")
+
+    topic.admins.remove(current_admin)
+    db.commit()
+    db.refresh(topic)
+
+    return {"message": "You removed yourself from admin list"}
+

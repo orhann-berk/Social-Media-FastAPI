@@ -108,7 +108,7 @@ def get_topics(db: Session = Depends(get_db), current_user: models.User = Depend
 
 
 @app.post("/topics/{topic_id}/discussion", status_code=status.HTTP_201_CREATED, tags=["topics"])
-def add_disc(
+def add_discussion_to_topic(
         topic_id: int,
         disc: DiscussionModel,
         db:Session = Depends(get_db),
@@ -118,7 +118,7 @@ def add_disc(
 
 
 @app.get("/topics/{topic_id}/discussion/all", status_code = status.HTTP_200_OK, tags=["topics"])
-def get_disc(db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+def get_all_topic_discussions(db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
     result = crud.read_disc(db)
     return result
 
@@ -151,6 +151,15 @@ def remove_member_from_topic(
         current_user: models.User = Depends(get_current_user),
 ):
     return crud.remove_member_from_topic(db, topic_id, user_id, current_user.id)
+
+
+@app.delete("/topics/{topic_id}/delete-admin", status_code=status.HTTP_200_OK, tags=["topics"])
+def delete_admin_from_topic(
+        topic_id: int,
+        db: Session = Depends(get_db),
+        current_user: models.User = Depends(get_current_user),
+):
+    return crud.delete_admin_from_topic(db, topic_id, current_user.id)
 
 if __name__ == "__main__":
     uvicorn.run(
