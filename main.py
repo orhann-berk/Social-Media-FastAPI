@@ -62,15 +62,6 @@ def login_user(form_data: OAuth2PasswordRequestForm = Depends(),
     }
 
 
-@app.delete("/user/{user_id}/delete", status_code=status.HTTP_202_ACCEPTED, tags=["user"])
-def delete_user(
-        user_id: int,
-        db: Session = Depends(get_db),
-        current_user: models.User = Depends(get_current_user)
-):
-    return crud.delete_user(db, user_id=user_id, current_user= current_user)
-
-
 @app.put("/users/{user_id}/update", status_code=status.HTTP_202_ACCEPTED, tags=["user"])
 def update_user(
     user: UserAuthModel,
@@ -86,6 +77,15 @@ def update_user(
         password=user.password,
         current_user = current_user
     )
+
+
+@app.delete("/user/{user_id}/delete", status_code=status.HTTP_202_ACCEPTED, tags=["user"])
+def delete_user(
+        user_id: int,
+        db: Session = Depends(get_db),
+        current_user: models.User = Depends(get_current_user)
+):
+    return crud.delete_user(db, user_id=user_id, current_user= current_user)
 
 
 @app.post("/topics/add", status_code=status.HTTP_201_CREATED, tags=["topic"])
