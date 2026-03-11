@@ -4,8 +4,12 @@
   #*.pyc
   #.DS_Store
   created by virtualenv automatically
-__pycache__/
-*.pyc
+/.idea/misc.xml
+/.idea/inspectionProfiles/profiles_settings.xml
+/.idea/inspectionProfiles/Project_Default.xml
+/social.db
+/.idea/vcs.xml
+/.idea/workspace.xml
 __pycache__/
 *.pyc
 .DS_Store

@@ -1,7 +1,8 @@
-from pydantic import BaseModel, Field, EmailStr
+from pydantic import EmailStr
 from typing import Optional, List
 from datetime import datetime
 from pydantic import BaseModel
+from db.models import RequestStatus
 
 class UserBaseModel(BaseModel):
     username: str
@@ -92,3 +93,16 @@ class UpdateTopicModel(BaseModel):
 
 class UpdateDiscussionModel(BaseModel):
     name: str
+
+class FriendRequestCreate(BaseModel):
+    sender_id: int
+    receiver_id: int
+
+class FriendRequestResponse(BaseModel):
+    id: int
+    sender_id: int
+    receiver_id: int
+    status: RequestStatus
+
+    class Config:
+        from_attributes = True

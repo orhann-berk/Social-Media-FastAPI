@@ -1,4 +1,6 @@
 from sqlalchemy.orm import Session
+from sqlalchemy import or_, and_
+from db.models import DbFriendRequest, RequestStatus
 from db.hash import Hash
 from db.models import User, Discussion, Topic, Admin
 from fastapi import APIRouter, HTTPException, status
@@ -16,11 +18,10 @@ def authenticate_user(db: Session, username: str, password: str):
     return user
 
 def read_users(db: Session):
-    users = db.query(User).all()
-    if users:
-        return users
-    raise HTTPException(status_code=404, detail="No Users Found")
-
+    retval = db.query(User).all()
+    if retval:
+        return retval
+    return "No users found"
 
 def get_user(db: Session, user_id: int):
     user = db.query(User).filter(User.id == user_id).first()
@@ -35,6 +36,7 @@ def add_user(db: Session, name:str, email:str, password:str):
     db.commit()
     db.refresh(user)
     return user
+
 
 
 def delete_user(db: Session, user_id: int, current_user: User):
@@ -342,3 +344,100 @@ def update_discussion(db: Session, topic_id: int, discussion_id: int, name: str,
     db.commit()
     db.refresh(discussion)
     return discussion
+
+def create_friend_request(db: Session, sender_id: int, receiver_id: int):
+    if sender_id == receiver_id:
+        raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE,
+                            detail="You can not send a friend request to yourself.")
+
+    receiver = db.query(User).filter(User.id == receiver_id).first()
+    if not receiver:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail="Receiver does not exist.")
+
+    existing_request = db.query(DbFriendRequest).filter(
+        or_(
+            and_(DbFriendRequest.sender_id == sender_id, DbFriendRequest.receiver_id == receiver_id),
+            and_(DbFriendRequest.receiver_id == sender_id, DbFriendRequest.sender_id == receiver_id)
+        )
+    ).first()
+
+    if existing_request:
+        raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE, detail="You have already sent a friend request to this user.")
+
+    new_request = DbFriendRequest(sender_id = sender_id, receiver_id = receiver_id,
+                                  status=RequestStatus.pending)
+
+    db.add(new_request)
+    db.commit()
+    db.refresh(new_request)
+
+    return new_request
+
+def get_pending_requests(db: Session, user_id: int):
+    requests = db.query(DbFriendRequest).filter(DbFriendRequest.receiver_id == user_id,
+                                                DbFriendRequest.status == RequestStatus.pending).all()
+
+    return requests
+
+def accept_friend_request(db: Session, request_id: int, user_id: int):
+    friend_request = db.query(DbFriendRequest).filter(DbFriendRequest.id == request_id).first()
+    if not friend_request:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail="This request does not exist.")
+
+    if friend_request.receiver_id != user_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                            detail="You can not answer this request!")
+
+
+    if friend_request.status != RequestStatus.pending:
+        raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE,
+                            detail="This request has already accepted.")
+
+    friend_request.status = RequestStatus.accepted
+    db.commit()
+    db.refresh(friend_request)
+    return friend_request
+
+def reject_friend_request(db: Session, request_id: int, user_id: int):
+    friend_request = db.query(DbFriendRequest).filter(DbFriendRequest.id == request_id).first()
+
+    if not friend_request:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail="This request does not exist.")
+
+    if friend_request.receiver_id != user_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                            detail="You can not answer this request!")
+
+    if friend_request.status != RequestStatus.pending:
+        raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE,
+                            detail="You already replied to this request.")
+
+    friend_request.status = RequestStatus.rejected
+    db.commit()
+    db.refresh(friend_request)
+    return friend_request
+
+def list_friends(db: Session, user_id: int):
+    requests_as_sender = db.query(DbFriendRequest).filter(DbFriendRequest.status == RequestStatus.accepted,
+                                                          DbFriendRequest.sender_id == user_id).all()
+
+    requests_as_receiver = db.query(DbFriendRequest).filter(DbFriendRequest.status == RequestStatus.accepted,
+                                                            DbFriendRequest.receiver_id == user_id).all()
+
+    all_friends = requests_as_receiver + requests_as_sender
+
+    friends_ids = []
+    for request in all_friends:
+        if request.sender_id == user_id:
+            friends_ids.append(request.receiver_id)
+        else:
+            friends_ids.append(request.sender_id)
+
+    if not friends_ids:
+        return []
+
+    friends = db.query(User).filter(User.id.in_(friends_ids)).all()
+    return friends

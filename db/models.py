@@ -1,7 +1,9 @@
-from sqlalchemy import Column, Integer, String, Boolean, Text, DateTime, ForeignKey, Table
+from sqlalchemy import Column, Integer, String, Boolean, Text, DateTime, ForeignKey, Table, Enum as SQLEnum
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from db.database import Base
+import enum
+
 
 # Association table to connect admins and topics
 topics_admins = Table('topic_admins', Base.metadata,
@@ -84,3 +86,18 @@ class Admin(Base):
     topics = relationship("Topic", secondary=topics_admins, back_populates="admins")
     user = relationship("User", back_populates="admin")
 
+class RequestStatus(str, enum.Enum):
+    pending = "pending"
+    accepted = "accepted"
+    rejected = "rejected"
+
+
+class DbFriendRequest(Base):
+    __tablename__ = "friend_requests"
+    id = Column(Integer, primary_key=True, index=True)
+    sender_id = Column(Integer, ForeignKey("users.id"))
+    receiver_id = Column(Integer, ForeignKey("users.id"))
+    status = Column(SQLEnum(RequestStatus), default=RequestStatus.pending)
+
+    sender = relationship("User", foreign_keys=[sender_id])
+    receiver = relationship("User", foreign_keys=[receiver_id])

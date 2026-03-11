@@ -4,7 +4,7 @@ from fastapi import HTTPException, FastAPI, Depends, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from schemas import UserAuthModel, UserBaseModel, TopicModel, DiscussionModel, AddTopicModel, AddMemberModel, \
-    AddAdminModel, UpdateTopicModel, UpdateDiscussionModel, UserOut
+    AddAdminModel, UpdateTopicModel, UpdateDiscussionModel, UserOut, FriendRequestResponse
 import crud
 from db.database import get_db, engine, Base
 from Posts import router as posts_router
@@ -99,6 +99,41 @@ def add_topic(topic: AddTopicModel,
 def get_topics(db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
     result = crud.read_topics(db)
     return result
+
+@app.post("/friends/request/{receiver_id}", response_model=FriendRequestResponse, status_code=status.HTTP_201_CREATED, tags=["friend-request"])
+def send_friend_request(receiver_id: int, db: Session = Depends(get_db),
+                        current_user: models.User = Depends(get_current_user)
+                        ):
+    return crud.create_friend_request(db=db, sender_id = current_user.id,
+                                      receiver_id = receiver_id)
+
+@app.get("/friend/requests/pending", response_model=List[FriendRequestResponse], tags=["friend-request"])
+def get_pending_requests(db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+    """
+    User may see friend requests.
+    """
+    return crud.get_pending_requests(db=db, user_id = current_user.id)
+
+
+@app.put("/friends/request/{request_id}/accept", response_model=FriendRequestResponse, tags=["friend-request"])
+def accept_friend_request(request_id: int, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+    return crud.accept_friend_request(db=db, request_id = request_id, user_id=current_user.id)
+
+
+@app.put("/friends/request/{request_id}/reject", response_model=FriendRequestResponse, tags=["friend-request"])
+def reject_friend_request(request_id: int, db=Depends(get_db), current_user: models.User = Depends(get_current_user)):
+    return crud.reject_friend_request(db=db, request_id = request_id, user_id=current_user.id)
+
+
+@app.get("/friends/{user_id}", response_model=List[UserBaseModel], tags=["friend-request"])
+def get_friends(user_id: int, db: Session = Depends(get_db)):
+    db_user = crud.get_user(db, user_id = user_id)
+    if db_user == "User not found":
+        raise HTTPException(status_code=404, detail="User not found!")
+
+    return crud.list_friends(db=db, user_id = user_id)
+
+
 
 
 @app.get("/topics/{topic_id}", status_code=status.HTTP_200_OK,response_model=TopicModel,tags=["topic"])
@@ -196,3 +231,4 @@ if __name__ == "__main__":
         reload=True,
         log_level="debug",
     )
+
