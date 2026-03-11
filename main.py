@@ -8,7 +8,6 @@ from schemas import UserAuthModel, UserBaseModel, TopicModel, DiscussionModel, A
 import crud
 from db.database import get_db, engine, Base
 from Posts import router as posts_router
-from db.hash import Hash
 from oauth2 import get_current_user, create_access_token
 from db import models
 
@@ -105,6 +104,15 @@ def add_topic(topic: AddTopicModel,
 def get_topics(db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
     result = crud.read_topics(db)
     return result
+
+
+@app.get("/topics/{topic_id}", status_code=status.HTTP_200_OK,response_model=TopicModel,tags=["topic"])
+def get_topic(
+        topic_id: int,
+        db: Session = Depends(get_db),
+        current_user: models.User = Depends(get_current_user),
+):
+    return crud.get_topic_by_id(db, topic_id)
 
 
 @app.post("/topics/{topic_id}/discussion", status_code=status.HTTP_201_CREATED, tags=["topic"])

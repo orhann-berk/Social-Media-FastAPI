@@ -221,6 +221,15 @@ def read_topics(db: Session):
     raise HTTPException(status_code=404, detail="No topics found")
 
 
+def get_topic_by_id(db: Session, topic_id: int):
+    topic = db.query(Topic).filter(Topic.id == topic_id).first()
+
+    if not topic:
+        raise HTTPException(status_code=404, detail="Topic not found")
+
+    return topic
+
+
 def add_disc(db: Session, name: str, topic_id: int, current_user_id: int):
     topic = db.query(Topic).filter(Topic.id == topic_id).first()
     if not topic:
