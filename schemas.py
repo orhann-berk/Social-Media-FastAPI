@@ -104,5 +104,5 @@ class FriendRequestResponse(BaseModel):
     receiver_id: int
     status: RequestStatus
 
-    class Config:
+    class ConfigDict:
         from_attributes = True
