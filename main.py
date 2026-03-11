@@ -100,7 +100,7 @@ def get_topics(db: Session = Depends(get_db), current_user: models.User = Depend
     result = crud.read_topics(db)
     return result
 
-@app.post("/friends/request/{receiver_id}", response_model=FriendRequestResponse, status_code=status.HTTP_201_CREATED, tags=["friend-request"])
+@app.post("/friend/request/{receiver_id}", response_model=FriendRequestResponse, status_code=status.HTTP_201_CREATED, tags=["friend-request"])
 def send_friend_request(receiver_id: int, db: Session = Depends(get_db),
                         current_user: models.User = Depends(get_current_user)
                         ):
