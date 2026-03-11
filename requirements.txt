@@ -1,0 +1,13 @@
+fastapi
+uvicorn
+pydantic
+sqlalchemy
+python-jose[cryptography]
+passlib
+pydantic[email]
+python-multipart
+bcrypt == 3.2.2
+pytest
+
+
+starlette
