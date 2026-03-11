@@ -94,14 +94,14 @@ def update_user(
     )
 
 
-@app.post("/topic/add", status_code=status.HTTP_201_CREATED, tags=["topics"])
+@app.post("/topics/add", status_code=status.HTTP_201_CREATED, tags=["topics"])
 def add_topic(topic: AddTopicModel,
               db: Session = Depends(get_db),
               current_user: models.User = Depends(get_current_user)):
     return crud.add_topic(db, topic.title, current_user.id)
 
 
-@app.get("/topic/all", status_code = status.HTTP_200_OK,response_model=List[TopicModel], tags=["topics"])
+@app.get("/topics/all", status_code = status.HTTP_200_OK,response_model=List[TopicModel], tags=["topics"])
 def get_topics(db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
     result = crud.read_topics(db)
     return result
@@ -143,8 +143,14 @@ def add_member_to_topic(
     return crud.add_member_to_topic(db, topic_id, member.user_id, current_user.id)
 
 
-
-
+@app.delete("/topics/{topic_id}/members/{user_id}", status_code=status.HTTP_200_OK, tags=["topics"])
+def remove_member_from_topic(
+        topic_id: int,
+        user_id: int,
+        db: Session = Depends(get_db),
+        current_user: models.User = Depends(get_current_user),
+):
+    return crud.remove_member_from_topic(db, topic_id, user_id, current_user.id)
 
 if __name__ == "__main__":
     uvicorn.run(

@@ -247,3 +247,26 @@ def read_disc(db: Session):
     raise HTTPException(status_code=404, detail="No discussions found")
 
 
+def remove_member_from_topic(db: Session, topic_id: int, user_id: int, current_user_id: int):
+    topic = db.query(Topic).filter(Topic.id == topic_id).first()
+    if not topic:
+        raise HTTPException(status_code=404, detail="Topic not found")
+
+    current_admin = db.query(Admin).filter(Admin.user_id == current_user_id).first()
+    if not current_admin or current_admin not in topic.admins:
+        raise HTTPException(status_code=403, detail="You are not admin of this topic")
+
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if user not in topic.members:
+        raise HTTPException(status_code=403, detail="User is not a member of this topic")
+
+    topic.members.remove(user)
+    db.commit()
+    db.refresh(topic)
+
+    return {"message": "Member removed from topic"}
+
+
