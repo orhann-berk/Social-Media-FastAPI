@@ -62,3 +62,33 @@ class PostOut(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class TopicModel(BaseModel):
+    title: str
+    discussions: List[DiscussionModel] = []
+    admins: List[AdminAll] = []
+    members: List[UserOut] = []
+
+class AdminAll(BaseModel):
+    id: int
+    user_id: int
+    name: str
+
+class AddTopicModel(BaseModel):
+    title: str
+
+class DiscussionModel(BaseModel):
+    name: str
+
+class AddMemberModel(BaseModel):
+    user_id: int
+
+class AddAdminModel(BaseModel):
+    user_id: int
+
+class UpdateTopicModel(BaseModel):
+    title: str
+
+class UpdateDiscussionModel(BaseModel):
+    name: str
