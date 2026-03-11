@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from sqlalchemy.sql.functions import current_user
 from db.hash import Hash
-from db.models import User, Discussion, Topic
+from db.models import User, Discussion, Topic, Admin
 from fastapi import APIRouter, HTTPException, status
 from oauth2 import create_access_token
 from db import models
@@ -125,13 +125,58 @@ def create_comment(db: Session, content: str, post_id: int, author_id: int):
     return comment
 
 
-def add_topic(db:Session, title:str):
-    topic = Topic(title = title)
-    db.add(topic)
+def add_topic(db: Session, title:str, user_id:int):
+    # create new topic
+    new_topic = Topic(title= title)
+    db.add(new_topic)
     db.commit()
-    db.refresh(topic)
-    return topic
+    db.refresh(new_topic)
 
+    # find admin record relation with user
+    admin = db.query(Admin).filter(Admin.user_id == user_id).first()
+
+    # if there is no admin record make a new one
+    if not admin:
+        user = db.query(User).filter(User.id == user_id).first()
+
+
+        admin = Admin(
+            user_id=user_id,
+            name=user.username
+        )
+        db.add(admin)
+        db.commit()
+        db.refresh(admin)
+
+    # do the relation from admin to topic
+    new_topic.admins.append(admin)
+    db.commit()
+    db.refresh(new_topic)
+
+    return new_topic
+
+
+def add_member_to_topic(db:Session, topic_id: int, user_id: int, current_user_id: int):
+    topic = db.query(Topic).filter(Topic.id == topic_id).first()
+    if not topic:
+        raise HTTPException(status_code=404, detail="Topic not found")
+
+    # check if admin exists
+    admin = db.query(Admin).filter(Admin.user_id == current_user_id).first()
+    if not admin or admin not in topic.admins:
+        raise HTTPException(status_code=403, detail="You are not admin of this topic")
+
+    # check if added user exists
+    user =db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if user not in topic.members:
+        topic.members.append(user)
+        db.commit()
+        db.refresh(topic)
+
+    return topic
 
 def read_topics(db: Session):
     retval = db.query(Topic).all()

@@ -6,7 +6,7 @@ from db.database import Base
 # Association table to connect admins and topics
 topics_admins = Table('topic_admins', Base.metadata,
 Column('admin_id', Integer, ForeignKey('admins.id')),
-Column('topic_id', Integer, ForeignKey('alltopics.id'))
+Column('topic_id', Integer, ForeignKey('topics.id'))
 )
 
 

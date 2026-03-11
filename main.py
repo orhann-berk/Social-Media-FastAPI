@@ -3,7 +3,7 @@ from typing import List
 from fastapi import HTTPException, FastAPI, Depends, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
-from schemas import UserAuthModel, UserBaseModel, TopicModel, DiscussionModel
+from schemas import UserAuthModel, UserBaseModel, TopicModel, DiscussionModel, AddTopicModel, AddMemberModel
 import crud
 from db.database import get_db, engine, Base
 from Posts import router as posts_router
@@ -92,26 +92,39 @@ def update_user(
         password=user.password
     )
 
-@app.post('/topics/add', status_code=status.HTTP_201_CREATED, tags=["topics"])
-def add_topic(topic: TopicModel, db:Session = Depends(get_db)):
-    return crud.add_topic(db, title= topic.title)
+
+@app.post("/topic/add", status_code=status.HTTP_201_CREATED, tags=["topics"])
+def add_topic(topic: AddTopicModel,
+              db: Session = Depends(get_db),
+              current_user: models.User = Depends(get_current_user)):
+    return crud.add_topic(db, topic.title, current_user.id)
 
 
-@app.get("/topics/all", status_code = status.HTTP_200_OK,response_model=List[TopicModel], tags=["topics"])
-def get_topics(db: Session = Depends(get_db)):
+@app.get("/topic/all", status_code = status.HTTP_200_OK,response_model=List[TopicModel], tags=["topics"])
+def get_topics(db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
     result = crud.read_topics(db)
     return result
 
 
-@app.post("/topics/add/discussion", status_code=status.HTTP_201_CREATED, tags=["topics"])
+@app.post("/topics/{topic_id}/discussion", status_code=status.HTTP_201_CREATED, tags=["topics"])
 def add_disc(topic_id: int, disc: DiscussionModel, db:Session = Depends(get_db)):
     return crud.add_disc(db, name= disc.name, topic_id = topic_id)
 
 
-@app.get("/topics/discussion/all", status_code = status.HTTP_200_OK, tags=["topics"])
+@app.get("/topics/{topic_id}/discussion/all", status_code = status.HTTP_200_OK, tags=["topics"])
 def get_disc(db: Session = Depends(get_db)):
     result = crud.read_disc(db)
     return result
+
+
+@app.post("/topics/{topic_id}/add-member", status_code=status.HTTP_201_CREATED, tags=["topics"])
+def add_member_to_topic(
+        topic_id: int,
+        member: AddMemberModel,
+        db: Session = Depends(get_db),
+        current_user: models.User = Depends(get_current_user),
+):
+    return crud.add_member_to_topic(db, topic_id, member.user_id, current_user.id)
 
 
 if __name__ == "__main__":
