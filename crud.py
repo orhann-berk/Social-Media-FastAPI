@@ -1,5 +1,4 @@
 from sqlalchemy.orm import Session
-from sqlalchemy.sql.functions import current_user
 from db.hash import Hash
 from db.models import User, Discussion, Topic, Admin
 from fastapi import APIRouter, HTTPException, status
@@ -17,17 +16,17 @@ def authenticate_user(db: Session, username: str, password: str):
     return user
 
 def read_users(db: Session):
-    retval = db.query(User).all()
-    if retval:
-        return retval
-    return "No users found"
+    users = db.query(User).all()
+    if users:
+        return users
+    raise HTTPException(status_code=404, detail="No Users Found")
 
 
 def get_user(db: Session, user_id: int):
-    retval = db.query(User).filter(User.id == user_id).first()
-    if retval:
-        return retval
-    return  "User not found"
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
 
 
 def add_user(db: Session, name:str, email:str, password:str):
@@ -38,34 +37,42 @@ def add_user(db: Session, name:str, email:str, password:str):
     return user
 
 
-def delete_user(db: Session, user_id: int):
+def delete_user(db: Session, user_id: int, current_user: User):
+    if current_user.id != user_id:
+        raise HTTPException(status_code=403, detail="You can only delete your own account")
+
     user = db.query(User).filter(User.id == user_id).first()
-    if current_user.is_logged_in:
-        db.delete(user)
-        db.commit()
-        return "User deleted"
-    else:
-        return "User must login"
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    db.delete(user)
+    db.commit()
+
+    return {"message": "User deleted."}
 
 
-def update_user(db: Session, user_id: int, name: str, email: str, password: str):
+def update_user(db: Session, user_id: int, name: str, email: str, password: str, current_user: User):
+    if current_user.id != user_id:
+        raise HTTPException(status_code=403, detail="You can only update your own account")
+
     db_user = db.query(User).filter(User.id == user_id).first()
     if not db_user:
-        return "User not found"
-    elif db_user.is_logged_in:
-        db_user.name = name
-        db_user.email = email
-        db_user.password = password
-        db.commit()
-        return "User updated successfully"
-    else:
-        return "User must login"
+        raise HTTPException(status_code=404, detail="User not found")
+
+    db_user.username = name
+    db_user.email = email
+    db_user.hashed_password = Hash.hash_password(password)
+
+    db.commit()
+    db.refresh(db_user)
+
+    return {"message": "User updated. Please login again."}
 
 
 def login_user(db: Session, username: str, password: str):
     user = db.query(User).filter(User.username == username).first()
     if not Hash.verify(password, user.hashed_password):
-     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
     access_token = create_access_token(data={"sub": str(user.id)})
 
