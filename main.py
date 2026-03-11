@@ -4,7 +4,7 @@ from fastapi import HTTPException, FastAPI, Depends, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from schemas import UserAuthModel, UserBaseModel, TopicModel, DiscussionModel, AddTopicModel, AddMemberModel, \
-    AddAdminModel, UpdateTopicModel, UpdateDiscussionModel
+    AddAdminModel, UpdateTopicModel, UpdateDiscussionModel, UserOut
 import crud
 from db.database import get_db, engine, Base
 from Posts import router as posts_router
@@ -19,18 +19,16 @@ Base.metadata.create_all(bind=engine)
 
 @app.get("/users/all", response_model=List[UserBaseModel], tags=["user"])
 def get_users(
-    db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user)
+    db: Session = Depends(get_db)
 ):
     result = crud.read_users(db)
     return result
 
 
-@app.get("/user/{user_id}", tags=["user"])
+@app.get("/user/{user_id}", response_model=UserOut, tags=["user"])
 def get_user(
     user_id: int,
-    db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user)
+    db: Session = Depends(get_db)
 ):
 
         return crud.get_user(db, user_id=user_id)
@@ -64,17 +62,13 @@ def login_user(form_data: OAuth2PasswordRequestForm = Depends(),
     }
 
 
-@app.get("/logout", tags=["user"], status_code=status.HTTP_200_OK)
-def logout_user(
-    current_user: models.User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    return {"message": "Logged out successfully"}
-
-
 @app.delete("/user/{user_id}/delete", status_code=status.HTTP_202_ACCEPTED, tags=["user"])
-def delete_user(user_id: int, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
-    return crud.delete_user(db, user_id=user_id)
+def delete_user(
+        user_id: int,
+        db: Session = Depends(get_db),
+        current_user: models.User = Depends(get_current_user)
+):
+    return crud.delete_user(db, user_id=user_id, current_user= current_user)
 
 
 @app.put("/users/{user_id}/update", status_code=status.HTTP_202_ACCEPTED, tags=["user"])
@@ -89,7 +83,8 @@ def update_user(
         user_id=user_id,
         name=user.username,
         email=user.email,
-        password=user.password
+        password=user.password,
+        current_user = current_user
     )
 
 
