@@ -142,7 +142,7 @@ def create_friend_request(db: Session, sender_id: int, receiver_id: int):
     ).first()
 
     if existing_request:
-        raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE, detail="You have already sent a friend.")
+        raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE, detail="You have already sent a friend request to this user.")
 
     new_request = DbFriendRequest(sender_id = sender_id, receiver_id = receiver_id,
                                   status=RequestStatus.pending)
@@ -159,11 +159,17 @@ def get_pending_requests(db: Session, user_id: int):
 
     return requests
 
-def accept_friend_request(db: Session, request_id: int):
+def accept_friend_request(db: Session, request_id: int, user_id: int):
     friend_request = db.query(DbFriendRequest).filter(DbFriendRequest.id == request_id).first()
     if not friend_request:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail="This request does not exist.")
+
+    if friend_request.receiver_id != user_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                            detail="You can not answer this request!")
+
+
     if friend_request.status != RequestStatus.pending:
         raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE,
                             detail="This request has already accepted.")
@@ -173,12 +179,16 @@ def accept_friend_request(db: Session, request_id: int):
     db.refresh(friend_request)
     return friend_request
 
-def reject_friend_request(db: Session, request_id: int):
+def reject_friend_request(db: Session, request_id: int, user_id: int):
     friend_request = db.query(DbFriendRequest).filter(DbFriendRequest.id == request_id).first()
 
     if not friend_request:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail="This request does not exist.")
+
+    if friend_request.receiver_id != user_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                            detail="You can not answer this request!")
 
     if friend_request.status != RequestStatus.pending:
         raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE,

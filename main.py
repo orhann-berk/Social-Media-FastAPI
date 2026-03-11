@@ -103,13 +103,13 @@ def get_pending_requests(db: Session = Depends(get_db), current_user: models.Use
 
 
 @app.put("/friends/request/{request_id}/accept", response_model=FriendRequestResponse, tags=["friend-request"])
-def accept_friend_request(request_id: int, db: Session = Depends(get_db)):
-    return crud.accept_friend_request(db=db, request_id = request_id)
+def accept_friend_request(request_id: int, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+    return crud.accept_friend_request(db=db, request_id = request_id, user_id=current_user.id)
 
 
 @app.put("/friends/request/{request_id}/reject", response_model=FriendRequestResponse, tags=["friend-request"])
-def reject_friend_request(request_id: int, db=Depends(get_db)):
-    return crud.reject_friend_request(db=db, request_id = request_id)
+def reject_friend_request(request_id: int, db=Depends(get_db), current_user: models.User = Depends(get_current_user)):
+    return crud.reject_friend_request(db=db, request_id = request_id, user_id=current_user.id)
 
 
 @app.get("/friends/{user_id}", response_model=List[UserBaseModel], tags=["friend-request"])
