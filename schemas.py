@@ -1,6 +1,7 @@
-from pydantic import BaseModel, Field, EmailStr
+from pydantic import EmailStr
 from typing import Optional, List
 from datetime import datetime
+from pydantic import BaseModel
 from db.models import RequestStatus
 
 class UserBaseModel(BaseModel):
@@ -32,12 +33,15 @@ class Token(BaseModel):
     access_token: str
     token_type: str = "bearer"
 
+
 class PostCreate(BaseModel):
     content: str
     image_url: Optional[str] = None
 
+
 class CommentCreate(BaseModel):
     content: str
+
 
 class CommentOut(BaseModel):
     id: int
@@ -47,6 +51,7 @@ class CommentOut(BaseModel):
 
     class Config:
         from_attributes = True
+
 
 class PostOut(BaseModel):
     id: int
@@ -59,10 +64,35 @@ class PostOut(BaseModel):
     class Config:
         from_attributes = True
 
-class UserUpdateModel(BaseModel):
-    username: str
-    password: str
-    email: str
+
+class TopicModel(BaseModel):
+    title: str
+    discussions: List[DiscussionModel] = []
+    admins: List[AdminAll] = []
+    members: List[UserOut] = []
+
+class AdminAll(BaseModel):
+    id: int
+    user_id: int
+    name: str
+
+class AddTopicModel(BaseModel):
+    title: str
+
+class DiscussionModel(BaseModel):
+    name: str
+
+class AddMemberModel(BaseModel):
+    user_id: int
+
+class AddAdminModel(BaseModel):
+    user_id: int
+
+class UpdateTopicModel(BaseModel):
+    title: str
+
+class UpdateDiscussionModel(BaseModel):
+    name: str
 
 class FriendRequestCreate(BaseModel):
     sender_id: int
