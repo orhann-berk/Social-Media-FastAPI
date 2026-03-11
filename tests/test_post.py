@@ -1,9 +1,7 @@
-
 import pytest
+from fastapi import status
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import sessionmaker
-from starlette.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_204_NO_CONTENT, HTTP_401_UNAUTHORIZED, \
-    HTTP_404_NOT_FOUND, HTTP_403_FORBIDDEN
 
 from main import app
 from sqlalchemy import create_engine
@@ -47,7 +45,7 @@ def test_register_user():
     response = client.post(
         "/register",
         json={"username":"testuser", "email":"test@test.com" ,"password":"password123"})
-    assert response.status_code == HTTP_201_CREATED
+    assert response.status_code == status.HTTP_201_CREATED
     assert response.json()["username"] == "testuser"
 
 def test_login_user():
@@ -55,26 +53,26 @@ def test_login_user():
     client.post("/register", json={"username":"loginuser", "email":"login@test.com", "password":"password123"})
        #login
     response = client.post("/login", data={"username":"loginuser", "password":"password123"})
-    assert response.status_code == HTTP_200_OK
+    assert response.status_code == status.HTTP_200_OK
     assert"access_token" in response.json()
 
 def test_create_post():
     register("post", "post@test.com")
     token = login("post")
     response = client.post("/posts", json={"content":"My first post"}, headers={"Authorization":f"Bearer {token}"})
-    assert response.status_code == HTTP_201_CREATED
+    assert response.status_code == status.HTTP_201_CREATED
     assert response.json()["content"] == "My first post"
 
 def test_create_post_with_image():
     register("imguser", "img@test.com")
     token = login("imguser")
     response = client.post("/posts/", json={"content":"Photo post", "image_url": "http//:image.com/photo.jpg"}, headers={"Authorization": f"Bearer {token}"})
-    assert response.status_code == HTTP_201_CREATED
+    assert response.status_code == status.HTTP_201_CREATED
     assert response.json()["image_url"] == "http//:image.com/photo.jpg"
 
 def test_create_post_unauthorized():
     response = client.post("/posts/", json={"content": "No auth"})
-    assert response.status_code == HTTP_401_UNAUTHORIZED
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 def test_get_my_wall():
     register("walluser", "wall@test.com")
@@ -82,14 +80,14 @@ def test_get_my_wall():
     client.post("/posts/", json={"content":"My wall post"},
     headers={"Authorization":f"Bearer {token}"})
     response = client.get("/posts/wall/me", headers={"Authorization":f"Bearer {token}"})
-    assert response.status_code == HTTP_200_OK
+    assert response.status_code == status.HTTP_200_OK
     assert len(response.json()) == 1
 
 def test_get_my_wall_empty():
     register("emptyuser", "empty@test.com")
     token = login("emptyuser")
     response = client.get("/pots/wall/me", headers={"Authorization": f"Bearer {token}"})
-    assert response.status_code == HTTP_404_NOT_FOUND
+    assert response.status_code == status.HTTP_404_NOT_FOUND
 
 def test_get_user_wall():
     register("user1", "user@test.com")
@@ -97,12 +95,12 @@ def test_get_user_wall():
     post = client.post("/posts/", json={"content": "User1 post"}, headers={"Authorization":f"Bearer {token}"})
     user_id = post.json()["author"]["id"]
     response = client.get(f"/posts/wall/{user_id}")
-    assert response.status_code == HTTP_200_OK
+    assert response.status_code == status.HTTP_200_OK
     assert len(response.json()) == 1
 
 def test_get_user_wall_not_found():
     response = client.get("/posts/wall/0000")
-    assert response.status_code == HTTP_404_NOT_FOUND
+    assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
 def test_delete_post():
@@ -111,13 +109,13 @@ def test_delete_post():
     post = client.post("/posts/", json={"content":"delete me"}, headers={"Authorization":f"Bearer {token}"})
     post_id = post.json()["id"]
     response = client.delete(f"posts/{post_id}", headers={"Authorization":f"Bearer {token}"})
-    assert response.status_code == HTTP_204_NO_CONTENT
+    assert response.status_code == status.HTTP_204_NO_CONTENT
 
 def test_delete_post_not_found():
     register("delete", "delete@test.com")
     token = login("delete")
     response = client.delete("/posts/0000", headers={"Authorization":f"Bearer {token}"})
-    assert response.status_code == HTTP_404_NOT_FOUND
+    assert response.status_code == status.HTTP_404_NOT_FOUND
 
 def test_delete_other_users_post():
     register("userA", "a@test.com")
@@ -127,7 +125,7 @@ def test_delete_other_users_post():
     post = client.post("/posts/", json={"content": "UserA post"}, headers={"Authorization": f"Bearer {tokenA}"})
     post_id = post.json()["id"]
     response = client.delete(f"/posts/{post_id}", headers={"Authorization":f"Bearer {tokenB}"})
-    assert response.status_code == HTTP_403_FORBIDDEN
+    assert response.status_code == status.HTTP_403_FORBIDDEN
 
 def test_add_comment():
     register("comment", "comment@test.com")
@@ -135,15 +133,15 @@ def test_add_comment():
     post = client.post("/posts/", json={"content":"Post to comment on"}, headers={"Authorization":f"Bearer {token}"})
     post_id = post.json()["id"]
     response = client.post(f"/posts/{post_id}/comments", json={"content":"Nice post!"}, headers={"Authorization":f"Bearer {token}"})
-    assert response.status_code == HTTP_201_CREATED
+    assert response.status_code == status.HTTP_201_CREATED
     assert response.json()["content"] == "Nice post!"
 
 def test_add_comment_post_not_found():
     register("comment2", "comment2@test.com")
     token = login("comment2")
     response = client.post("/posts/0000/comment", json={"content": "no comment"}, headers={"Authorization":f"Bearer {token}"})
-    assert response.status_code == HTTP_404_NOT_FOUND
+    assert response.status_code == status.HTTP_404_NOT_FOUND
 
 def test_add_comment_unauthorized():
     response = client.post("/posts/1/comments", json={"content": "No auth comment"})
-    assert response.status_code == HTTP_401_UNAUTHORIZED
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
