@@ -441,3 +441,32 @@ def list_friends(db: Session, user_id: int):
 
     friends = db.query(User).filter(User.id.in_(friends_ids)).all()
     return friends
+
+def delete_topic(db: Session, topic_id: int, current_user_id: int):
+    topic = db.query(Topic).filter(Topic.id == topic_id).first()
+    if not topic:
+        raise HTTPException(status_code=404, detail="Topic not found")
+    current_admin = db.query(Admin).filter(Admin.user_id == current_user_id).first()
+    if not current_admin or current_admin not in topic.admins:
+        raise HTTPException(status_code=403, detail="You have to be admin for delete topic")
+
+    db.delete(topic)
+    db.commit()
+    return {"message": "Topic has been deleted"}
+
+
+def delete_discussion(db: Session, discussion_id: int, current_user_id: int, topic_id: int):
+    discussion = db.query(Discussion).filter(Discussion.id == discussion_id).first()
+    topic = db.query(Topic).filter(Topic.id == topic_id).first()
+    if not discussion:
+        raise HTTPException(status_code=404, detail="Discussion not found")
+    if not topic:
+        raise HTTPException(status_code=404, detail="Topic not found")
+
+    current_admin = db.query(Admin).filter(Admin.user_id == current_user_id).first()
+    if not current_admin or current_admin not in topic.admins:
+        raise HTTPException(status_code=403, detail="You have to be admin for delete this discussion")
+
+    db.delete(discussion)
+    db.commit()
+    return {"message": "Discussion has been deleted"}

@@ -155,7 +155,7 @@ def add_discussion_to_topic(
     return crud.add_disc(db, name= disc.name, topic_id = topic_id, current_user_id = current_user.id)
 
 
-@app.get("/topics/{topic_id}/discussion/all", status_code = status.HTTP_200_OK, tags=["topic"])
+@app.get("/discussion/all", status_code = status.HTTP_200_OK, tags=["topic"])
 def get_all_topic_discussions(db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
     result = crud.read_disc(db)
     return result
@@ -219,6 +219,24 @@ def update_discussion(
         current_user: models.User = Depends(get_current_user)
 ):
     return crud.update_discussion(db, topic_id, discussion_id, disc_data.name, current_user.id)
+
+@app.delete("/topics/delete/{topic_id}", status_code=status.HTTP_200_OK, tags=["topic"])
+def delete_topic(
+        topic_id: int,
+        db: Session = Depends(get_db),
+        current_user: models.User = Depends(get_current_user),
+):
+    return crud.delete_topic(db, topic_id, current_user.id)
+
+
+@app.delete("/topics/delete/{topic_id}/discussions/{discussion_id}", status_code=status.HTTP_200_OK, tags=["topic"])
+def delete_discussion(
+        discussion_id: int,
+        topic_id: int,
+        db: Session = Depends(get_db),
+        current_user: models.User = Depends(get_current_user),
+):
+    return crud.delete_discussion(db, discussion_id, current_user.id, topic_id)
 
 
 app.include_router(posts_router)

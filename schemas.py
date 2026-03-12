@@ -26,7 +26,7 @@ class UserOut (BaseModel):
     id: int
     username: str
     email:EmailStr
-    class Config:
+    class ConfigDict:
         from_attributes = True
 
 class Token(BaseModel):
@@ -49,7 +49,7 @@ class CommentOut(BaseModel):
     author: UserOut
     created_at: datetime
 
-    class Config:
+    class ConfigDict:
         from_attributes = True
 
 
@@ -61,7 +61,7 @@ class PostOut(BaseModel):
     created_at: datetime
     comments: List[CommentOut] = []
 
-    class Config:
+    class ConfigDict:
         from_attributes = True
 
 
