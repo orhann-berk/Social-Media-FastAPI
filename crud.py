@@ -387,8 +387,8 @@ def accept_friend_request(db: Session, request_id: int, user_id: int):
                             detail="This request does not exist.")
 
     if friend_request.receiver_id != user_id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
-                            detail="You can not answer this request!")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail="Not Found")
 
 
     if friend_request.status != RequestStatus.pending:
